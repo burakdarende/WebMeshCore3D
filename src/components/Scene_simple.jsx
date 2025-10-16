@@ -24,6 +24,147 @@ function Loader() {
   return <Html center>{progress.toFixed(0)} % yükleniyor</Html>;
 }
 
+// Real-time camera position debugger with on-screen UI
+function CameraDebugger() {
+  const { camera } = useThree();
+  const [position, setPosition] = React.useState({ x: 0, y: 0, z: 0 });
+  const [showUI, setShowUI] = React.useState(true);
+
+  // Keyboard controls for fine-tuning
+  React.useEffect(() => {
+    const handleKeyPress = (event) => {
+      const step = 0.1;
+      switch (event.key.toLowerCase()) {
+        case "w":
+          camera.position.z -= step;
+          break;
+        case "s":
+          camera.position.z += step;
+          break;
+        case "a":
+          camera.position.x -= step;
+          break;
+        case "d":
+          camera.position.x += step;
+          break;
+        case "q":
+          camera.position.y += step;
+          break;
+        case "e":
+          camera.position.y -= step;
+          break;
+        case "p": // Print current position
+          console.log("🎯 PERFECT POSITION FOUND:");
+          console.log(
+            `📋 camera={{ position: [${camera.position.x.toFixed(
+              2
+            )}, ${camera.position.y.toFixed(2)}, ${camera.position.z.toFixed(
+              2
+            )}], fov: ${camera.fov?.toFixed(0) || 75} }}`
+          );
+          break;
+        case "h": // Toggle UI
+          setShowUI(!showUI);
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [camera, showUI]);
+
+  useFrame(() => {
+    // Update position state for UI
+    setPosition({
+      x: camera.position.x,
+      y: camera.position.y,
+      z: camera.position.z,
+    });
+  });
+
+  if (!showUI) return null;
+
+  return (
+    <Html
+      fullscreen
+      style={{
+        pointerEvents: "none",
+        zIndex: 1000,
+      }}
+    >
+      <div
+        style={{
+          position: "fixed",
+          top: "20px",
+          right: "20px",
+          background: "rgba(0, 0, 0, 0.9)",
+          color: "white",
+          padding: "15px",
+          borderRadius: "8px",
+          fontFamily: "monospace",
+          fontSize: "12px",
+          minWidth: "300px",
+          border: "2px solid #00ff00",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.5)",
+        }}
+      >
+        <div
+          style={{ marginBottom: "10px", color: "#00ff00", fontWeight: "bold" }}
+        >
+          📷 CAMERA DEBUG
+        </div>
+
+        <div style={{ marginBottom: "8px" }}>
+          <strong>Position:</strong>
+        </div>
+        <div style={{ marginLeft: "10px", marginBottom: "5px" }}>
+          X: {position.x.toFixed(2)} | Y: {position.y.toFixed(2)} | Z:{" "}
+          {position.z.toFixed(2)}
+        </div>
+
+        <div style={{ marginBottom: "8px" }}>
+          <strong>FOV:</strong> {camera.fov?.toFixed(0) || "N/A"}
+        </div>
+
+        <div
+          style={{
+            background: "rgba(0, 255, 0, 0.1)",
+            padding: "8px",
+            borderRadius: "4px",
+            marginBottom: "8px",
+          }}
+        >
+          <div
+            style={{ color: "#00ff00", fontSize: "10px", marginBottom: "3px" }}
+          >
+            📋 COPY THIS:
+          </div>
+          <div
+            style={{
+              background: "rgba(255, 255, 255, 0.1)",
+              padding: "4px",
+              borderRadius: "2px",
+              fontSize: "10px",
+              wordBreak: "break-all",
+            }}
+          >
+            camera=
+            {`{{ position: [${position.x.toFixed(2)}, ${position.y.toFixed(
+              2
+            )}, ${position.z.toFixed(2)}], fov: ${
+              camera.fov?.toFixed(0) || 75
+            } }}`}
+          </div>
+        </div>
+
+        <div style={{ fontSize: "10px", color: "#888" }}>
+          🎮 WASD: move | Q/E: up/down | P: console log | H: hide
+        </div>
+      </div>
+    </Html>
+  );
+}
+
 // Don McCurdy's bloom post-processing setup
 function BloomEffect() {
   const { gl, scene, camera } = useThree();
@@ -81,6 +222,23 @@ function Model() {
     if (gltf?.scene) {
       console.log("🎨 SPLINE-STYLE: Model loaded, analyzing materials...");
       console.log("═══════════════════════════════════════════════════");
+
+      // Check for cameras in the GLTF file
+      if (gltf.cameras && gltf.cameras.length > 0) {
+        console.log("📷 CAMERAS FOUND:", gltf.cameras.length);
+        gltf.cameras.forEach((camera, index) => {
+          console.log(`Camera ${index}:`, {
+            name: camera.name,
+            type: camera.type,
+            position: camera.position,
+            fov: camera.fov || "N/A",
+            near: camera.near,
+            far: camera.far,
+          });
+        });
+      } else {
+        console.log("📷 No cameras found in GLTF file");
+      }
 
       // Material analysis counters
       let totalMaterials = 0;
@@ -209,13 +367,18 @@ function Model() {
     }
   }, [gltf]);
 
-  return <primitive object={gltf.scene} />;
+  return (
+    <>
+      <CameraDebugger />
+      <primitive object={gltf.scene} />
+    </>
+  );
 }
 
 export default function Scene() {
   return (
     <Canvas
-      camera={{ position: [0, 1.5, 4], fov: 75 }}
+      camera={{ position: [4.58, 2.71, 4.22], fov: 50 }} // Perfect manual position from debug
       shadows // Enable shadows
       gl={{
         antialias: true,
@@ -282,9 +445,10 @@ export default function Scene() {
       <OrbitControls
         enableDamping
         dampingFactor={0.05}
-        minDistance={1}
-        maxDistance={15}
-        maxPolarAngle={Math.PI / 1.5}
+        minDistance={2}
+        maxDistance={12}
+        maxPolarAngle={Math.PI / 1.8}
+        target={[0, 0.5, 0]} // Look at center of room floor level
       />
 
       {/* Don McCurdy's bloom post-processing */}
