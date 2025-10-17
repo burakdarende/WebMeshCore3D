@@ -1,4 +1,17 @@
-import React, { Suspense, useEffect } from "react";
+// ═══════════════════════════════════════════════════════════════════════════════
+// 3D SCENE SYSTEM v1.0 by Burak Darende - https://burakdarende.com
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// 🚀 PRODUCTION DEPLOYMENT CHECKLIST:
+// 1. Set ENABLE_DEBUG_MODE = false     (hides all debug UI)
+// 2. Set ENABLE_CONSOLE_LOGS = false   (hides all console output)
+// 3. Set ENABLE_FOCUS_CONTROL = false  (disables G+X/Y/Z controls)
+// 4. Set ENABLE_CAMERA_DEBUG_UI = false (hides debug overlay)
+//
+// This will give you a clean production build with zero debug output!
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import React, { Suspense, useEffect, useState, useRef } from "react";
 import { Canvas, extend, useFrame, useThree } from "@react-three/fiber";
 import {
   OrbitControls,
@@ -16,53 +29,490 @@ import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass";
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🔧 DEVELOPER SETTINGS
+// ═══════════════════════════════════════════════════════════════════════════════
+// These settings control the development/debug features.
+// Set ENABLE_DEBUG_MODE to false before deployment to hide all debug UI.
+
+const DEVELOPER_CONFIG = {
+  // 🐛 Master switch for all debug features
+  ENABLE_DEBUG_MODE: true, // Set to false for production deployment
+
+  // 🎯 Focus point manipulation (G key + X/Y/Z axis locking)
+  ENABLE_FOCUS_CONTROL: true, // Blender-style transform system
+
+  // 📊 Real-time camera debug UI
+  ENABLE_CAMERA_DEBUG_UI: true, // Shows position, target, copy-paste values
+
+  // 📝 Console logging for materials and setup
+  // ⚠️ IMPORTANT: Set to false for production to hide ALL console logs!
+  // Controls: material analysis, camera switching, setup logs, WebGL errors
+  ENABLE_CONSOLE_LOGS: true, // Set to true for development debugging
+};
+
 // Extend R3F with post-processing classes
 extend({ EffectComposer, RenderPass, UnrealBloomPass, OutputPass });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🎯 CAMERA & SCENE CONFIGURATION
+// ═══════════════════════════════════════════════════════════════════════════════
+// Configure your perfect camera setup here. Use the debug system below to find
+// your ideal values, then paste them here for permanent use.
+
+const CAMERA_CONFIG = {
+  // 📷 Camera position and field of view
+  position: [4.98, 3.76, 4.86], // [x, y, z] - Change this to your desired camera position
+  fov: 50, // Field of view - typically 30-75
+
+  // 🎯 Focus target (where the camera looks at)
+  target: [0.46, 0.77, -0.27], // [x, y, z] - Change this to your desired focus point
+
+  // 📐 Camera projection type
+  perspective: true, // true = Perspective camera, false = Orthographic camera
+
+  // 📏 Orthographic camera settings (only used when perspective = false)
+  orthographic: {
+    left: -10,
+    right: 10,
+    top: 10,
+    bottom: -10,
+    zoom: 2.0, // Increased zoom for closer view
+  },
+
+  // 🎮 OrbitControls settings
+  minDistance: 2,
+  maxDistance: 12,
+  maxPolarAngle: Math.PI / 1.8, // Prevent camera from going below ground
+  enableDamping: true,
+  dampingFactor: 0.05,
+};
+
+// 🌟 BLOOM & LIGHTING CONFIGURATION
+const VISUAL_CONFIG = {
+  // 💫 Bloom settings (Don McCurdy's approach)
+  bloom: {
+    strength: 0.2, // How strong the bloom effect is
+    radius: 0.1, // Size of the bloom
+    threshold: 1, // Only pixels above this brightness will bloom
+  },
+
+  // 🌍 Environment and background
+  background: "#1a1a2e", // Scene background color
+  environment: "city", // HDRI environment preset
+
+  // 💡 Lighting setup
+  ambientLight: {
+    intensity: 0.3,
+    color: "#ffffff",
+  },
+  keyLight: {
+    position: [10, 10, 5],
+    intensity: 3,
+    color: "#ffffff",
+  },
+  fillLight: {
+    position: [-5, 5, -5],
+    intensity: 1,
+    color: "#87CEEB",
+  },
+  rimLight: {
+    position: [0, 5, -10],
+    intensity: 2,
+    color: "#FFA500",
+  },
+};
+
+// 🚀 DEPLOYMENT INSTRUCTIONS:
+// ═══════════════════════════════════════════════════════════════════════════════
+// When you're ready to deploy your project:
+//
+// 1. Find your perfect camera setup using the debug tools:
+//    - G key + X/Y/Z axis for focus point positioning
+//    - C key to switch between Perspective/Orthographic camera
+//    - WASD keys for camera movement, Shift+WASD for target movement
+// 2. Copy the values from the debug UI and paste them into CAMERA_CONFIG above
+// 3. Set your preferred camera type: CAMERA_CONFIG.perspective = true/false
+// 4. Set DEVELOPER_CONFIG.ENABLE_DEBUG_MODE = false to hide all debug features
+// 5. Optionally set other DEVELOPER_CONFIG flags to false for production
+//
+// This will give you a clean production build with your perfect camera setup!
+// ═══════════════════════════════════════════════════════════════════════════════
 
 function Loader() {
   const { progress } = useProgress();
   return <Html center>{progress.toFixed(0)} % yükleniyor</Html>;
 }
 
-// Real-time camera position debugger with on-screen UI
-function CameraDebugger() {
+// Axis Line Helper - Shows constraint axis during transform
+function AxisLine({ axis, position, visible }) {
+  if (!visible) return null;
+
+  const getLineProps = () => {
+    const length = 20; // Very long line
+    switch (axis) {
+      case "x":
+        return {
+          points: [
+            [-length, position[1], position[2]],
+            [length, position[1], position[2]],
+          ],
+          color: "#ff0000", // Red for X
+        };
+      case "y":
+        return {
+          points: [
+            [position[0], -length, position[2]],
+            [position[0], length, position[2]],
+          ],
+          color: "#00ff00", // Green for Y
+        };
+      case "z":
+        return {
+          points: [
+            [position[0], position[1], -length],
+            [position[0], position[1], length],
+          ],
+          color: "#0000ff", // Blue for Z
+        };
+      default:
+        return { points: [], color: "#ffffff" };
+    }
+  };
+
+  const { points, color } = getLineProps();
+
+  return (
+    <line>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={2}
+          array={new Float32Array(points.flat())}
+          itemSize={3}
+        />
+      </bufferGeometry>
+      <lineBasicMaterial color={color} linewidth={3} />
+    </line>
+  );
+}
+
+// Focus Point Marker - 3D red dot with Blender-style transform system (G + X/Y/Z)
+function FocusPointMarker({ target, onTargetChange }) {
+  const meshRef = useRef();
+  const [isDragging, setIsDragging] = useState(false);
+  const [grabMode, setGrabMode] = useState(false);
+  const [constraintAxis, setConstraintAxis] = useState(null); // 'x', 'y', 'z', or null
+  const [dragStartPosition, setDragStartPosition] = useState(null);
+  const [dragStartTarget, setDragStartTarget] = useState(null);
+
+  useEffect(() => {
+    if (meshRef.current) {
+      meshRef.current.position.set(target[0], target[1], target[2]);
+    }
+  }, [target]);
+
+  // Global keyboard handler for G/X/Y/Z keys (only active in debug mode)
+  useEffect(() => {
+    if (!DEVELOPER_CONFIG.ENABLE_FOCUS_CONTROL) return;
+
+    const handleKeyDown = (event) => {
+      const key = event.key.toLowerCase();
+
+      if (key === "g") {
+        event.preventDefault();
+        if (grabMode) {
+          // Exit grab mode
+          setGrabMode(false);
+          setConstraintAxis(null);
+          setIsDragging(false);
+        } else {
+          // Enter grab mode
+          setGrabMode(true);
+          setConstraintAxis(null);
+        }
+      } else if (grabMode && ["x", "y", "z"].includes(key)) {
+        event.preventDefault();
+        setConstraintAxis(key);
+      } else if (key === "escape") {
+        // Cancel grab mode
+        setGrabMode(false);
+        setConstraintAxis(null);
+        setIsDragging(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [grabMode]);
+
+  const handlePointerDown = (event) => {
+    if (!grabMode) return;
+
+    event.stopPropagation();
+    setIsDragging(true);
+    setDragStartPosition([event.clientX, event.clientY]);
+    setDragStartTarget([...target]);
+    event.target.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event) => {
+    if (!isDragging || !grabMode || !dragStartPosition) return;
+
+    event.stopPropagation();
+
+    const deltaX = (event.clientX - dragStartPosition[0]) * 0.01;
+    const deltaY = -(event.clientY - dragStartPosition[1]) * 0.01; // Invert Y
+
+    let newTarget = [...dragStartTarget];
+
+    if (constraintAxis) {
+      // Constrained movement
+      switch (constraintAxis) {
+        case "x":
+          newTarget[0] = dragStartTarget[0] + deltaX;
+          break;
+        case "y":
+          newTarget[1] = dragStartTarget[1] + deltaY;
+          break;
+        case "z":
+          newTarget[2] = dragStartTarget[2] + deltaX; // Use deltaX for Z movement
+          break;
+      }
+    } else {
+      // Free movement (screen space)
+      newTarget[0] = dragStartTarget[0] + deltaX;
+      newTarget[1] = dragStartTarget[1] + deltaY;
+    }
+
+    if (onTargetChange) {
+      onTargetChange(newTarget);
+    }
+  };
+
+  const handlePointerUp = (event) => {
+    event.stopPropagation();
+    setIsDragging(false);
+    setDragStartPosition(null);
+    setDragStartTarget(null);
+    if (event.target.releasePointerCapture) {
+      event.target.releasePointerCapture(event.pointerId);
+    }
+  };
+
+  // Visual state based on grab mode and constraint
+  const getVisualState = () => {
+    if (isDragging) {
+      return { size: 0.08, color: "#ffff00", opacity: 1.0 }; // Yellow when dragging
+    } else if (grabMode) {
+      if (constraintAxis) {
+        const colors = { x: "#ff6666", y: "#66ff66", z: "#6666ff" };
+        return { size: 0.07, color: colors[constraintAxis], opacity: 0.9 };
+      }
+      return { size: 0.06, color: "#ff8800", opacity: 0.9 }; // Orange in grab mode
+    } else {
+      return { size: 0.05, color: "#ff0000", opacity: 0.8 }; // Normal red
+    }
+  };
+
+  const visualState = getVisualState();
+
+  return (
+    <>
+      <mesh
+        ref={meshRef}
+        renderOrder={999}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+      >
+        <sphereGeometry args={[visualState.size, 16, 16]} />
+        <meshBasicMaterial
+          color={visualState.color}
+          transparent={true}
+          opacity={visualState.opacity}
+          depthTest={false}
+        />
+      </mesh>
+
+      {/* Show axis line when in constrained mode */}
+      <AxisLine
+        axis={constraintAxis}
+        position={target}
+        visible={grabMode && constraintAxis && !isDragging}
+      />
+    </>
+  );
+}
+
+// Controlled OrbitControls that can be disabled during grab mode
+function ControlledOrbitControls({ target }) {
+  const [isGrabMode, setIsGrabMode] = useState(false);
+
+  // Track G key state globally for grab mode (only active in debug mode)
+  useEffect(() => {
+    if (!DEVELOPER_CONFIG.ENABLE_FOCUS_CONTROL) return;
+
+    const handleKeyDown = (event) => {
+      if (event.key.toLowerCase() === "g") {
+        setIsGrabMode((prev) => !prev); // Toggle grab mode
+      } else if (event.key === "Escape") {
+        setIsGrabMode(false); // Cancel grab mode
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  return (
+    <OrbitControls
+      enabled={DEVELOPER_CONFIG.ENABLE_FOCUS_CONTROL ? !isGrabMode : true} // Disable when in grab mode if debug enabled
+      enableDamping={CAMERA_CONFIG.enableDamping}
+      dampingFactor={CAMERA_CONFIG.dampingFactor}
+      minDistance={CAMERA_CONFIG.minDistance}
+      maxDistance={CAMERA_CONFIG.maxDistance}
+      maxPolarAngle={CAMERA_CONFIG.maxPolarAngle}
+      target={target} // Use dynamic target directly
+    />
+  );
+}
+
+// Camera Type Switcher - Handles perspective/orthographic switching with C key
+function CameraSwitcher() {
+  const { camera, set } = useThree();
+  const [isPerspective, setIsPerspective] = useState(CAMERA_CONFIG.perspective);
+
+  // C key handler for camera type switching (only active in debug mode)
+  useEffect(() => {
+    if (!DEVELOPER_CONFIG.ENABLE_DEBUG_MODE) return;
+
+    const handleKeyDown = (event) => {
+      if (event.key.toLowerCase() === "c") {
+        event.preventDefault();
+        setIsPerspective((prev) => !prev);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Switch camera type when isPerspective changes
+  useEffect(() => {
+    const currentPosition = camera.position.clone();
+    const currentRotation = camera.rotation.clone();
+
+    let newCamera;
+
+    if (isPerspective) {
+      // Switch to Perspective Camera
+      newCamera = new THREE.PerspectiveCamera(
+        CAMERA_CONFIG.fov,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      if (DEVELOPER_CONFIG.ENABLE_CONSOLE_LOGS) {
+        console.log("📐 Switched to PERSPECTIVE camera");
+      }
+    } else {
+      // Switch to Orthographic Camera
+      const aspect = window.innerWidth / window.innerHeight;
+      const frustumSize = 15; // Reduced for better proportion with higher zoom
+      newCamera = new THREE.OrthographicCamera(
+        (frustumSize * aspect) / -2,
+        (frustumSize * aspect) / 2,
+        frustumSize / 2,
+        frustumSize / -2,
+        0.1,
+        1000
+      );
+      newCamera.zoom = CAMERA_CONFIG.orthographic.zoom; // Use direct zoom value
+      if (DEVELOPER_CONFIG.ENABLE_CONSOLE_LOGS) {
+        console.log("📐 Switched to ORTHOGRAPHIC camera");
+      }
+    }
+
+    // Preserve position and rotation
+    newCamera.position.copy(currentPosition);
+    newCamera.rotation.copy(currentRotation);
+    newCamera.updateProjectionMatrix();
+
+    // Update Three.js camera
+    set({ camera: newCamera });
+  }, [isPerspective, set]);
+
+  return null; // This component doesn't render anything
+}
+
+// Real-time camera position debugger with focus control
+function CameraDebugger({ target: externalTarget, onTargetChange }) {
   const { camera } = useThree();
   const [position, setPosition] = React.useState({ x: 0, y: 0, z: 0 });
+  // Use external target if provided, otherwise use internal state
+  const [internalTarget, setInternalTarget] = React.useState([0, 0.5, 0]);
+  const target = externalTarget || internalTarget;
+  const setTarget = onTargetChange || setInternalTarget;
   const [showUI, setShowUI] = React.useState(true);
 
-  // Keyboard controls for fine-tuning
+  // Keyboard controls for camera and target fine-tuning
   React.useEffect(() => {
     const handleKeyPress = (event) => {
       const step = 0.1;
+
+      // Check for modifier keys
+      const isShiftPressed = event.shiftKey;
+
       switch (event.key.toLowerCase()) {
+        // Camera position controls (default)
         case "w":
-          camera.position.z -= step;
+          if (isShiftPressed) {
+            setTarget((prev) => [prev[0], prev[1], prev[2] - step]);
+          } else {
+            camera.position.z -= step;
+          }
           break;
         case "s":
-          camera.position.z += step;
+          if (isShiftPressed) {
+            setTarget((prev) => [prev[0], prev[1], prev[2] + step]);
+          } else {
+            camera.position.z += step;
+          }
           break;
         case "a":
-          camera.position.x -= step;
+          if (isShiftPressed) {
+            setTarget((prev) => [prev[0] - step, prev[1], prev[2]]);
+          } else {
+            camera.position.x -= step;
+          }
           break;
         case "d":
-          camera.position.x += step;
+          if (isShiftPressed) {
+            setTarget((prev) => [prev[0] + step, prev[1], prev[2]]);
+          } else {
+            camera.position.x += step;
+          }
           break;
         case "q":
-          camera.position.y += step;
+          if (isShiftPressed) {
+            setTarget((prev) => [prev[0], prev[1] + step, prev[2]]);
+          } else {
+            camera.position.y += step;
+          }
           break;
         case "e":
-          camera.position.y -= step;
+          if (isShiftPressed) {
+            setTarget((prev) => [prev[0], prev[1] - step, prev[2]]);
+          } else {
+            camera.position.y -= step;
+          }
           break;
-        case "p": // Print current position
-          console.log("🎯 PERFECT POSITION FOUND:");
-          console.log(
-            `📋 camera={{ position: [${camera.position.x.toFixed(
-              2
-            )}, ${camera.position.y.toFixed(2)}, ${camera.position.z.toFixed(
-              2
-            )}], fov: ${camera.fov?.toFixed(0) || 75} }}`
-          );
-          break;
+
         case "h": // Toggle UI
           setShowUI(!showUI);
           break;
@@ -71,7 +521,7 @@ function CameraDebugger() {
 
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [camera, showUI]);
+  }, [camera, showUI, target]);
 
   useFrame(() => {
     // Update position state for UI
@@ -85,83 +535,92 @@ function CameraDebugger() {
   if (!showUI) return null;
 
   return (
-    <Html
-      fullscreen
-      style={{
-        pointerEvents: "none",
-        zIndex: 1000,
-      }}
-    >
-      <div
+    <>
+      <Html
+        fullscreen
         style={{
-          position: "fixed",
-          top: "20px",
-          right: "20px",
-          background: "rgba(0, 0, 0, 0.9)",
-          color: "white",
-          padding: "15px",
-          borderRadius: "8px",
-          fontFamily: "monospace",
-          fontSize: "12px",
-          minWidth: "300px",
-          border: "2px solid #00ff00",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.5)",
+          pointerEvents: "none",
+          zIndex: 1000,
         }}
       >
         <div
-          style={{ marginBottom: "10px", color: "#00ff00", fontWeight: "bold" }}
-        >
-          📷 CAMERA DEBUG
-        </div>
-
-        <div style={{ marginBottom: "8px" }}>
-          <strong>Position:</strong>
-        </div>
-        <div style={{ marginLeft: "10px", marginBottom: "5px" }}>
-          X: {position.x.toFixed(2)} | Y: {position.y.toFixed(2)} | Z:{" "}
-          {position.z.toFixed(2)}
-        </div>
-
-        <div style={{ marginBottom: "8px" }}>
-          <strong>FOV:</strong> {camera.fov?.toFixed(0) || "N/A"}
-        </div>
-
-        <div
           style={{
-            background: "rgba(0, 255, 0, 0.1)",
-            padding: "8px",
-            borderRadius: "4px",
-            marginBottom: "8px",
+            position: "fixed",
+            top: "20px",
+            right: "20px",
+            background: "rgba(0, 0, 0, 0.9)",
+            color: "white",
+            padding: "15px",
+            borderRadius: "8px",
+            fontFamily: "monospace",
+            fontSize: "12px",
+            minWidth: "300px",
+            border: "2px solid #00ff00",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.5)",
           }}
         >
           <div
-            style={{ color: "#00ff00", fontSize: "10px", marginBottom: "3px" }}
+            style={{
+              marginBottom: "10px",
+              color: "#00ff00",
+              fontWeight: "bold",
+            }}
           >
-            📋 COPY THIS:
+            📷 CAMERA DEBUG
+          </div>
+
+          <div style={{ marginBottom: "8px" }}>
+            <strong>Position:</strong>
           </div>
           <div
             style={{
-              background: "rgba(255, 255, 255, 0.1)",
-              padding: "4px",
-              borderRadius: "2px",
-              fontSize: "10px",
-              wordBreak: "break-all",
+              marginLeft: "10px",
+              marginBottom: "5px",
+              color: "#ff4444",
             }}
           >
-            camera=
-            {`{{ position: [${position.x.toFixed(2)}, ${position.y.toFixed(
-              2
-            )}, ${position.z.toFixed(2)}], fov: ${
-              camera.fov?.toFixed(0) || 75
-            } }}`}
+            X: {position.x.toFixed(2)} | Y: {position.y.toFixed(2)} | Z:{" "}
+            {position.z.toFixed(2)}
+          </div>
+
+          <div style={{ marginBottom: "8px" }}>
+            <strong>FOV:</strong> {camera.fov?.toFixed(0) || "N/A"}
+          </div>
+
+          <div style={{ marginBottom: "8px" }}>
+            <strong>Camera Type(Press C to toggle):</strong>{" "}
+            <span style={{ color: "#ff0000" }}>
+              {camera.type === "PerspectiveCamera"
+                ? "Perspective"
+                : "Orthographic"}
+            </span>
+          </div>
+
+          <div style={{ marginBottom: "8px" }}>
+            <strong>Focus Target:</strong>
+          </div>
+          <div
+            style={{
+              marginLeft: "10px",
+              marginBottom: "5px",
+              color: "#ff4444",
+            }}
+          >
+            X: {target[0].toFixed(2)} | Y: {target[1].toFixed(2)} | Z:{" "}
+            {target[2].toFixed(2)}
+          </div>
+
+          <div style={{ fontSize: "11px", color: "#888" }}>
+            🎮 WASD - EQ: CAMERA Position | Shift+WASD - EQ: TARGET Position |
+            H: hide
+          </div>
+          <div style={{ fontSize: "11px", color: "#888", marginTop: "3px" }}>
+            🎯 G: grab mode | X/Y/Z: axis lock | C: camera type | ESC: cancel
           </div>
         </div>
-
-        <div style={{ fontSize: "10px", color: "#888" }}>
-          🎮 WASD: move | Q/E: up/down | P: console log | H: hide
-        </div>
-      </div>
-    </Html>
+      </Html>
+      <FocusPointMarker target={target} onTargetChange={setTarget} />
+    </>
   );
 }
 
@@ -169,62 +628,88 @@ function CameraDebugger() {
 function BloomEffect() {
   const { gl, scene, camera } = useThree();
   const composer = React.useRef();
+  const [isEnabled, setIsEnabled] = React.useState(true);
 
   React.useEffect(() => {
-    if (!gl || !scene || !camera) return;
+    if (!gl || !scene || !camera || !isEnabled) return;
 
-    // Create effect composer
-    const effectComposer = new EffectComposer(gl);
+    try {
+      // Create effect composer
+      const effectComposer = new EffectComposer(gl);
 
-    // Add render pass
-    const renderPass = new RenderPass(scene, camera);
-    effectComposer.addPass(renderPass);
+      // Add render pass
+      const renderPass = new RenderPass(scene, camera);
+      effectComposer.addPass(renderPass);
 
-    // Add bloom pass with reduced intensity
-    const bloomPass = new UnrealBloomPass(
-      new THREE.Vector2(window.innerWidth, window.innerHeight),
-      0.2, // strength: 0.2 (reduced from 0.5 for subtler effect)
-      0.1, // radius: smaller radius for tighter glow
-      1 // threshold: 20 nits (higher threshold = less bloom)
-    );
-    effectComposer.addPass(bloomPass);
+      // Add bloom pass with configurable settings
+      const bloomPass = new UnrealBloomPass(
+        new THREE.Vector2(window.innerWidth, window.innerHeight),
+        VISUAL_CONFIG.bloom.strength, // Bloom strength from config
+        VISUAL_CONFIG.bloom.radius, // Bloom radius from config
+        VISUAL_CONFIG.bloom.threshold // Bloom threshold from config
+      );
+      effectComposer.addPass(bloomPass);
 
-    // Add output pass for tone mapping
-    const outputPass = new OutputPass();
-    effectComposer.addPass(outputPass);
+      // Add output pass for tone mapping
+      const outputPass = new OutputPass();
+      effectComposer.addPass(outputPass);
 
-    composer.current = effectComposer;
+      composer.current = effectComposer;
 
-    // Handle resize
-    const handleResize = () => {
-      effectComposer.setSize(window.innerWidth, window.innerHeight);
-    };
-    window.addEventListener("resize", handleResize);
+      // Handle resize
+      const handleResize = () => {
+        if (effectComposer) {
+          effectComposer.setSize(window.innerWidth, window.innerHeight);
+        }
+      };
+      window.addEventListener("resize", handleResize);
 
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, [gl, scene, camera]);
+      return () => {
+        window.removeEventListener("resize", handleResize);
+        if (composer.current) {
+          composer.current.dispose();
+        }
+      };
+    } catch (error) {
+      console.error("Bloom effect error:", error);
+      setIsEnabled(false);
+    }
+  }, [gl, scene, camera, isEnabled]);
 
   useFrame(() => {
-    if (composer.current) {
-      composer.current.render();
+    if (composer.current && isEnabled) {
+      try {
+        composer.current.render();
+      } catch (error) {
+        console.error("Render error:", error);
+        setIsEnabled(false);
+      }
     }
   }, 1);
 
   return null;
 }
 
-function Model() {
+function Model({ target, onTargetChange }) {
   const gltf = useLoader(GLTFLoader, "/models/bdr_room_1.glb");
 
+  const [materialsProcessed, setMaterialsProcessed] = useState(false);
+
   useEffect(() => {
-    if (gltf?.scene) {
-      console.log("🎨 SPLINE-STYLE: Model loaded, analyzing materials...");
-      console.log("═══════════════════════════════════════════════════");
+    if (gltf?.scene && !materialsProcessed) {
+      setMaterialsProcessed(true);
+
+      if (DEVELOPER_CONFIG.ENABLE_CONSOLE_LOGS) {
+        console.log("🎨 SPLINE-STYLE: Model loaded, analyzing materials...");
+        console.log("═══════════════════════════════════════════════════");
+      }
 
       // Check for cameras in the GLTF file
-      if (gltf.cameras && gltf.cameras.length > 0) {
+      if (
+        gltf.cameras &&
+        gltf.cameras.length > 0 &&
+        DEVELOPER_CONFIG.ENABLE_CONSOLE_LOGS
+      ) {
         console.log("📷 CAMERAS FOUND:", gltf.cameras.length);
         gltf.cameras.forEach((camera, index) => {
           console.log(`Camera ${index}:`, {
@@ -236,7 +721,7 @@ function Model() {
             far: camera.far,
           });
         });
-      } else {
+      } else if (DEVELOPER_CONFIG.ENABLE_CONSOLE_LOGS) {
         console.log("📷 No cameras found in GLTF file");
       }
 
@@ -288,18 +773,20 @@ function Model() {
             }
 
             // Detailed material logging
-            console.log(`\n🔍 Material: "${mat.name || "unnamed"}"`, {
-              type: mat.type,
-              hasEmission: mat.emissive
-                ? mat.emissive.getHex() !== 0x000000
-                : false,
-              emissiveHex: mat.emissive
-                ? `#${mat.emissive.getHex().toString(16).padStart(6, "0")}`
-                : "none",
-              intensity: mat.emissiveIntensity || 0,
-              metalness: mat.metalness?.toFixed(2) || "N/A",
-              roughness: mat.roughness?.toFixed(2) || "N/A",
-            });
+            if (DEVELOPER_CONFIG.ENABLE_CONSOLE_LOGS) {
+              console.log(`\n🔍 Material: "${mat.name || "unnamed"}"`, {
+                type: mat.type,
+                hasEmission: mat.emissive
+                  ? mat.emissive.getHex() !== 0x000000
+                  : false,
+                emissiveHex: mat.emissive
+                  ? `#${mat.emissive.getHex().toString(16).padStart(6, "0")}`
+                  : "none",
+                intensity: mat.emissiveIntensity || 0,
+                metalness: mat.metalness?.toFixed(2) || "N/A",
+                roughness: mat.roughness?.toFixed(2) || "N/A",
+              });
+            }
 
             // Don McCurdy's emission and bloom approach
             if (mat.emissive && mat.emissive.getHex() !== 0x000000) {
@@ -317,18 +804,22 @@ function Model() {
                 mat.emissiveIntensity = 40; // 40 nits - above bloom threshold but not overwhelming
 
                 enhancedMaterials++;
-                console.log(
-                  `🌟 MODERATE EMISSIVE: "${mat.name}" -> ${mat.emissiveIntensity} nits`
-                );
+                if (DEVELOPER_CONFIG.ENABLE_CONSOLE_LOGS) {
+                  console.log(
+                    `🌟 MODERATE EMISSIVE: "${mat.name}" -> ${mat.emissiveIntensity} nits`
+                  );
+                }
               } else {
                 // Low intensity for very subtle bloom
                 mat.emissiveIntensity = Math.min(mat.emissiveIntensity, 25); // Cap at 25 nits
               }
-              console.log(
-                `✨ Enhanced "${
-                  mat.name
-                }" -> Final Intensity: ${mat.emissiveIntensity.toFixed(1)}`
-              );
+              if (DEVELOPER_CONFIG.ENABLE_CONSOLE_LOGS) {
+                console.log(
+                  `✨ Enhanced "${
+                    mat.name
+                  }" -> Final Intensity: ${mat.emissiveIntensity.toFixed(1)}`
+                );
+              }
             }
 
             // Check for potential light materials by name
@@ -345,9 +836,11 @@ function Model() {
               nameIndicatesLight &&
               (!mat.emissive || mat.emissive.getHex() === 0x000000)
             ) {
-              console.log(
-                `💡 Adding emission to light-named material: "${mat.name}"`
-              );
+              if (DEVELOPER_CONFIG.ENABLE_CONSOLE_LOGS) {
+                console.log(
+                  `💡 Adding emission to light-named material: "${mat.name}"`
+                );
+              }
               mat.emissive = mat.emissive || new THREE.Color();
               mat.emissive.setRGB(1, 0.9, 0.7); // Warm white
               mat.emissiveIntensity = 3;
@@ -359,99 +852,191 @@ function Model() {
         }
       });
 
-      console.log(`\n📊 MATERIAL ANALYSIS COMPLETE:`);
-      console.log(`   Total Materials: ${totalMaterials}`);
-      console.log(`   Emissive Materials: ${emissiveMaterials}`);
-      console.log(`   Enhanced Materials: ${enhancedMaterials}`);
-      console.log("═══════════════════════════════════════════════════");
+      if (DEVELOPER_CONFIG.ENABLE_CONSOLE_LOGS) {
+        console.log(`\n📊 MATERIAL ANALYSIS COMPLETE:`);
+        console.log(`   Total Materials: ${totalMaterials}`);
+        console.log(`   Emissive Materials: ${emissiveMaterials}`);
+        console.log(`   Enhanced Materials: ${enhancedMaterials}`);
+        console.log("═══════════════════════════════════════════════════");
+      }
     }
-  }, [gltf]);
+  }, [gltf, materialsProcessed]);
 
   return (
     <>
-      <CameraDebugger />
+      {/* 🔧 DEVELOPER ONLY: Camera Debug System */}
+      {DEVELOPER_CONFIG.ENABLE_CAMERA_DEBUG_UI && (
+        <CameraDebugger target={target} onTargetChange={onTargetChange} />
+      )}
       <primitive object={gltf.scene} />
     </>
   );
 }
 
 export default function Scene() {
+  // Shared target state for both OrbitControls and FocusPointMarker
+  const [sharedTarget, setSharedTarget] = useState(CAMERA_CONFIG.target);
+  const [hasWebGL, setHasWebGL] = useState(true);
+
+  // Check WebGL support
+  useEffect(() => {
+    const canvas = document.createElement("canvas");
+    const gl =
+      canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    if (!gl) {
+      setHasWebGL(false);
+      if (DEVELOPER_CONFIG.ENABLE_CONSOLE_LOGS) {
+        console.error("WebGL not supported");
+      }
+    }
+  }, []);
+
+  // Create initial camera based on config
+  const createInitialCamera = () => {
+    if (CAMERA_CONFIG.perspective) {
+      return {
+        position: CAMERA_CONFIG.position,
+        fov: CAMERA_CONFIG.fov,
+      };
+    } else {
+      // Orthographic camera setup
+      const aspect =
+        typeof window !== "undefined"
+          ? window.innerWidth / window.innerHeight
+          : 1;
+      const frustumSize = 10;
+      return {
+        position: CAMERA_CONFIG.position,
+        left: (frustumSize * aspect) / -2,
+        right: (frustumSize * aspect) / 2,
+        top: frustumSize / 2,
+        bottom: frustumSize / -2,
+        near: 0.1,
+        far: 1000,
+        zoom: CAMERA_CONFIG.orthographic.zoom,
+      };
+    }
+  };
+
+  // Fallback UI for WebGL issues
+  if (!hasWebGL) {
+    return (
+      <div
+        style={{
+          width: "100vw",
+          height: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#1a1a2e",
+          color: "white",
+          fontFamily: "Arial, sans-serif",
+        }}
+      >
+        <div style={{ textAlign: "center" }}>
+          <h2>WebGL Not Supported</h2>
+          <p>Your browser doesn't support WebGL or it's disabled.</p>
+          <p>Please enable WebGL or use a modern browser.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Canvas
-      camera={{ position: [4.58, 2.71, 4.22], fov: 50 }} // Perfect manual position from debug
-      shadows // Enable shadows
+      camera={createInitialCamera()}
+      shadows // Enable shadows with optimization
+      dpr={[1, 2]} // Responsive device pixel ratio
+      performance={{ min: 0.5, max: 1, debounce: 200 }} // Smart performance management
+      frameloop="always" // Keep rendering but optimize internally
       gl={{
         antialias: true,
-        toneMapping: THREE.AgXToneMapping, // Don McCurdy's recommended AgX tone mapping
-        toneMappingExposure: 0.5, // Don McCurdy's recommended 0.5 exposure
+        alpha: false,
+        powerPreference: "high-performance",
+        toneMapping: THREE.AgXToneMapping,
+        toneMappingExposure: 0.5,
         outputColorSpace: THREE.SRGBColorSpace,
+        preserveDrawingBuffer: false, // Better memory management
         shadowMap: {
           enabled: true,
           type: THREE.PCFSoftShadowMap,
+          autoUpdate: true, // Re-enabled but optimized shadows
         },
       }}
+      style={{ background: VISUAL_CONFIG.background }}
+      fallback={
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: VISUAL_CONFIG.background,
+            color: "white",
+          }}
+        >
+          <div>Loading 3D Scene...</div>
+        </div>
+      }
     >
-      {/* Don McCurdy approach: Proper scene lighting independent of emissives */}
-      <color attach="background" args={["#1a1a2e"]} />
-      <Environment preset="city" />
+      {/* Scene Background & Environment */}
+      <color attach="background" args={[VISUAL_CONFIG.background]} />
+      <Environment preset={VISUAL_CONFIG.environment} background={false} />
       <SoftShadows />
-
-      {/* Balanced ambient lighting for the scene */}
-      <ambientLight intensity={0.3} color="#ffffff" />
-
-      {/* Key Light */}
+      {/* Optimized Lighting System */}
+      <ambientLight
+        intensity={VISUAL_CONFIG.ambientLight.intensity}
+        color={VISUAL_CONFIG.ambientLight.color}
+      />
+      {/* Key Light with reduced shadow quality for performance */}
       <directionalLight
-        position={[10, 10, 5]}
-        intensity={3}
-        color="#ffffff"
+        position={VISUAL_CONFIG.keyLight.position}
+        intensity={VISUAL_CONFIG.keyLight.intensity}
+        color={VISUAL_CONFIG.keyLight.color}
         castShadow
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={[512, 512]} // Reduced for performance
         shadow-camera-near={0.1}
-        shadow-camera-far={50}
-        shadow-camera-left={-10}
-        shadow-camera-right={10}
-        shadow-camera-top={10}
-        shadow-camera-bottom={-10}
+        shadow-camera-far={20} // Reduced range
+        shadow-camera-left={-3}
+        shadow-camera-right={3}
+        shadow-camera-top={3}
+        shadow-camera-bottom={-3}
         shadow-bias={-0.0001}
       />
-
-      {/* Fill Light */}
-      <directionalLight position={[-5, 5, -5]} intensity={1} color="#87CEEB" />
-
-      {/* Rim Light */}
-      <pointLight
-        position={[0, 5, -10]}
-        intensity={2}
-        color="#FFA500"
-        distance={20}
-        castShadow
+      {/* Fill Light - no shadows for performance */}
+      <directionalLight
+        position={VISUAL_CONFIG.fillLight.position}
+        intensity={VISUAL_CONFIG.fillLight.intensity * 0.6}
+        color={VISUAL_CONFIG.fillLight.color}
+        castShadow={false}
       />
-
+      {/* Rim Light - reduced and no shadows */}
+      <pointLight
+        position={VISUAL_CONFIG.rimLight.position}
+        intensity={VISUAL_CONFIG.rimLight.intensity * 0.5}
+        color={VISUAL_CONFIG.rimLight.color}
+        distance={10}
+        decay={2}
+        castShadow={false}
+      />{" "}
       <Suspense fallback={<Loader />}>
-        <Model />
+        <Model target={sharedTarget} onTargetChange={setSharedTarget} />
       </Suspense>
-
-      {/* Contact Shadows for realism */}
+      {/* 🔧 DEVELOPER ONLY: Camera Type Switcher */}
+      {DEVELOPER_CONFIG.ENABLE_DEBUG_MODE && <CameraSwitcher />}
+      {/* Optimized Contact Shadows for subtle realism */}
       <ContactShadows
         position={[0, 0, 0]}
-        opacity={0.3}
-        scale={30}
-        blur={1}
-        far={5}
-        resolution={256}
+        opacity={0.2}
+        scale={20}
+        blur={2}
+        far={3}
+        resolution={128} // Reduced for performance
         color="#000000"
       />
-
-      <OrbitControls
-        enableDamping
-        dampingFactor={0.05}
-        minDistance={2}
-        maxDistance={12}
-        maxPolarAngle={Math.PI / 1.8}
-        target={[0, 0.5, 0]} // Look at center of room floor level
-      />
-
-      {/* Don McCurdy's bloom post-processing */}
+      <ControlledOrbitControls target={sharedTarget} />
+      {/* Don McCurdy's optimized bloom post-processing */}
       <BloomEffect />
     </Canvas>
   );
