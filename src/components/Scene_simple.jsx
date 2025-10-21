@@ -64,7 +64,10 @@ const DEVELOPER_CONFIG = {
   // 🌟 Bloom effect debug controls
   ENABLE_BLOOM_DEBUG_UI: true, // Interactive bloom controls for development
 
-  // 📝 Console logging for materials and setup
+  // � Lighting debug controls
+  ENABLE_LIGHTING_DEBUG_UI: true, // Interactive lighting controls
+
+  // �📝 Console logging for materials and setup
   // ⚠️ IMPORTANT: Set to false for production to hide ALL console logs!
   // Controls: material analysis, camera switching, setup logs, WebGL errors
   ENABLE_CONSOLE_LOGS: true, // Set to true for development debugging
@@ -1113,17 +1116,7 @@ function ExternalBloomDebugUI() {
               threshold: parseFloat(e.target.value),
             }))
           }
-          style={{
-            width: "100%",
-            cursor: "pointer",
-            pointerEvents: "auto",
-            WebkitAppearance: "none",
-            appearance: "none",
-            height: "6px",
-            borderRadius: "3px",
-            background: "#333",
-            outline: "none",
-          }}
+          style={{ width: "100%" }}
         />
       </div>
 
@@ -1144,17 +1137,7 @@ function ExternalBloomDebugUI() {
               strength: parseFloat(e.target.value),
             }))
           }
-          style={{
-            width: "100%",
-            cursor: "pointer",
-            pointerEvents: "auto",
-            WebkitAppearance: "none",
-            appearance: "none",
-            height: "6px",
-            borderRadius: "3px",
-            background: "#333",
-            outline: "none",
-          }}
+          style={{ width: "100%" }}
         />
       </div>
 
@@ -1175,17 +1158,7 @@ function ExternalBloomDebugUI() {
               radius: parseFloat(e.target.value),
             }))
           }
-          style={{
-            width: "100%",
-            cursor: "pointer",
-            pointerEvents: "auto",
-            WebkitAppearance: "none",
-            appearance: "none",
-            height: "6px",
-            borderRadius: "3px",
-            background: "#333",
-            outline: "none",
-          }}
+          style={{ width: "100%" }}
         />
       </div>
 
@@ -1221,12 +1194,13 @@ function ExternalBloomDebugUI() {
 // Copy this template and modify for new debug panels
 function ExternalLightingDebugUI() {
   // Uncomment when implementing lighting debug
-  /*
+
   const [lightingData, setLightingData] = useState({
     ambientIntensity: VISUAL_CONFIG.ambientLight.intensity,
     keyLightIntensity: VISUAL_CONFIG.keyLight.intensity,
     fillLightIntensity: VISUAL_CONFIG.fillLight.intensity,
     rimLightIntensity: VISUAL_CONFIG.rimLight.intensity,
+    setLightingState: null,
   });
 
   // Poll lighting data from window object
@@ -1247,12 +1221,23 @@ function ExternalLightingDebugUI() {
     return null;
   }
 
+  const updateLighting = (updates) => {
+    if (lightingData.setLightingState) {
+      lightingData.setLightingState((prev) => ({
+        ...prev,
+        ...updates,
+      }));
+    }
+  };
+
   return (
     <div
       style={{
         position: "fixed",
         bottom: `${DEBUG_UI_CONFIG.bottomMargin}px`,
-        left: `${DEBUG_UI_CONFIG.getPanelPosition(DEBUG_UI_CONFIG.panels.LIGHTING_DEBUG.index)}px`,
+        left: `${DEBUG_UI_CONFIG.getPanelPosition(
+          DEBUG_UI_CONFIG.panels.LIGHTING_DEBUG.index
+        )}px`,
         background: "rgba(0, 0, 0, 0.9)",
         color: "white",
         padding: "15px",
@@ -1275,15 +1260,80 @@ function ExternalLightingDebugUI() {
       >
         {DEBUG_UI_CONFIG.panels.LIGHTING_DEBUG.icon} LIGHTING DEBUG
       </div>
-      
-      // Add lighting controls here...
-      
+
+      <div style={{ marginBottom: "15px" }}>
+        <label style={{ display: "block", marginBottom: "5px" }}>
+          Ambient: {lightingData.ambientIntensity.toFixed(2)}
+        </label>
+        <input
+          type="range"
+          min="0"
+          max="2"
+          step="0.1"
+          value={lightingData.ambientIntensity}
+          onChange={(e) =>
+            updateLighting({ ambientIntensity: parseFloat(e.target.value) })
+          }
+          style={{ width: "100%" }}
+        />
+      </div>
+
+      <div style={{ marginBottom: "15px" }}>
+        <label style={{ display: "block", marginBottom: "5px" }}>
+          Key Light: {lightingData.keyLightIntensity.toFixed(2)}
+        </label>
+        <input
+          type="range"
+          min="0"
+          max="5"
+          step="0.1"
+          value={lightingData.keyLightIntensity}
+          onChange={(e) =>
+            updateLighting({ keyLightIntensity: parseFloat(e.target.value) })
+          }
+          style={{ width: "100%" }}
+        />
+      </div>
+
+      <div style={{ marginBottom: "15px" }}>
+        <label style={{ display: "block", marginBottom: "5px" }}>
+          Fill Light: {lightingData.fillLightIntensity.toFixed(2)}
+        </label>
+        <input
+          type="range"
+          min="0"
+          max="3"
+          step="0.1"
+          value={lightingData.fillLightIntensity}
+          onChange={(e) =>
+            updateLighting({ fillLightIntensity: parseFloat(e.target.value) })
+          }
+          style={{ width: "100%" }}
+        />
+      </div>
+
+      <div style={{ marginBottom: "15px" }}>
+        <label style={{ display: "block", marginBottom: "5px" }}>
+          Rim Light: {lightingData.rimLightIntensity.toFixed(2)}
+        </label>
+        <input
+          type="range"
+          min="0"
+          max="4"
+          step="0.1"
+          value={lightingData.rimLightIntensity}
+          onChange={(e) =>
+            updateLighting({ rimLightIntensity: parseFloat(e.target.value) })
+          }
+          style={{ width: "100%" }}
+        />
+      </div>
+
+      <div style={{ fontSize: "10px", color: "#888", marginTop: "10px" }}>
+        💡 Real-time lighting control | ⚡ Performance optimized
+      </div>
     </div>
   );
-  */
-
-  // Return null when not implemented
-  return null;
 }
 
 function Model({ target, onTargetChange }) {
@@ -1555,6 +1605,22 @@ export default function Scene() {
   const [sharedTarget, setSharedTarget] = useState(CAMERA_CONFIG.target);
   const [hasWebGL, setHasWebGL] = useState(true);
 
+  // Dynamic lighting state for real-time control
+  const [lightingState, setLightingState] = useState({
+    ambientIntensity: VISUAL_CONFIG.ambientLight.intensity,
+    keyLightIntensity: VISUAL_CONFIG.keyLight.intensity,
+    fillLightIntensity: VISUAL_CONFIG.fillLight.intensity,
+    rimLightIntensity: VISUAL_CONFIG.rimLight.intensity,
+  });
+
+  // Expose lighting data to window for external UI access
+  useEffect(() => {
+    window.lightingDebugData = {
+      ...lightingState,
+      setLightingState,
+    };
+  }, [lightingState]);
+
   // Check WebGL support
   useEffect(() => {
     const canvas = document.createElement("canvas");
@@ -1669,15 +1735,15 @@ export default function Scene() {
         <color attach="background" args={[VISUAL_CONFIG.background]} />
         <Environment preset={VISUAL_CONFIG.environment} background={false} />
         <SoftShadows />
-        {/* Optimized Lighting System */}
+        {/* Optimized Lighting System - Dynamic controls */}
         <ambientLight
-          intensity={VISUAL_CONFIG.ambientLight.intensity}
+          intensity={lightingState.ambientIntensity}
           color={VISUAL_CONFIG.ambientLight.color}
         />
         {/* Key Light with configurable shadow quality */}
         <directionalLight
           position={VISUAL_CONFIG.keyLight.position}
-          intensity={VISUAL_CONFIG.keyLight.intensity}
+          intensity={lightingState.keyLightIntensity}
           color={VISUAL_CONFIG.keyLight.color}
           castShadow
           shadow-mapSize={[
@@ -1695,14 +1761,14 @@ export default function Scene() {
         {/* Fill Light - no shadows for performance */}
         <directionalLight
           position={VISUAL_CONFIG.fillLight.position}
-          intensity={VISUAL_CONFIG.fillLight.intensity * 0.6}
+          intensity={lightingState.fillLightIntensity * 0.6}
           color={VISUAL_CONFIG.fillLight.color}
           castShadow={false}
         />
         {/* Rim Light - reduced and no shadows */}
         <pointLight
           position={VISUAL_CONFIG.rimLight.position}
-          intensity={VISUAL_CONFIG.rimLight.intensity * 0.5}
+          intensity={lightingState.rimLightIntensity * 0.5}
           color={VISUAL_CONFIG.rimLight.color}
           distance={10}
           decay={2}
@@ -1733,8 +1799,8 @@ export default function Scene() {
       {/* External Fixed UI Components (Completely Outside Canvas) */}
       <ExternalCameraDebugUI />
       <ExternalBloomDebugUI />
-      {/* 🚀 Future panels ready for implementation:
       <ExternalLightingDebugUI />
+      {/* 🚀 Future panels ready for implementation:
       <ExternalPerformanceDebugUI />
       <ExternalMaterialDebugUI />
       */}
