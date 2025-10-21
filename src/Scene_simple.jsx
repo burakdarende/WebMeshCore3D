@@ -70,36 +70,6 @@ const DEVELOPER_CONFIG = {
   ENABLE_CONSOLE_LOGS: true, // Set to true for development debugging
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// 🎨 DEBUG UI LAYOUT CONFIGURATION
-// ═══════════════════════════════════════════════════════════════════════════════
-// Centralized UI panel positioning for consistent layout
-
-const DEBUG_UI_CONFIG = {
-  // 📏 Panel dimensions
-  panelWidth: 320, // Standard width for all panels
-  panelGap: 120, // Gap between panels
-  bottomMargin: 20, // Distance from bottom of screen
-  leftMargin: 20, // Distance from left edge
-
-  // 🎯 Calculate panel positions dynamically
-  getPanelPosition: (panelIndex) => {
-    const baseLeft = DEBUG_UI_CONFIG.leftMargin;
-    const panelSpacing = DEBUG_UI_CONFIG.panelWidth + DEBUG_UI_CONFIG.panelGap;
-    return baseLeft + panelIndex * panelSpacing;
-  },
-
-  // 📊 Panel registry (for future expansion)
-  panels: {
-    CAMERA_DEBUG: { index: 0, color: "#00ff00", icon: "📷" },
-    BLOOM_DEBUG: { index: 1, color: "#ff9500", icon: "🌟" },
-    // 🚀 Future panels can be added here:
-    LIGHTING_DEBUG: { index: 2, color: "#ffff00", icon: "💡" },
-    PERFORMANCE_DEBUG: { index: 3, color: "#ff0080", icon: "⚡" },
-    MATERIAL_DEBUG: { index: 4, color: "#00ffff", icon: "🎨" },
-  },
-};
-
 // Extend R3F with post-processing classes
 extend({
   EffectComposer,
@@ -582,6 +552,7 @@ function CameraDebugger({ target: externalTarget, onTargetChange }) {
   const [internalTarget, setInternalTarget] = React.useState([0, 0.5, 0]);
   const target = externalTarget || internalTarget;
   const setTarget = onTargetChange || setInternalTarget;
+  const [showUI, setShowUI] = React.useState(true);
 
   // Keyboard controls for camera and target fine-tuning
   React.useEffect(() => {
@@ -635,12 +606,16 @@ function CameraDebugger({ target: externalTarget, onTargetChange }) {
             camera.position.y -= step;
           }
           break;
+
+        case "h": // Toggle UI
+          setShowUI(!showUI);
+          break;
       }
     };
 
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [camera, target]);
+  }, [camera, showUI, target]);
 
   useFrame(() => {
     // Update position state for UI
@@ -651,18 +626,93 @@ function CameraDebugger({ target: externalTarget, onTargetChange }) {
     });
   });
 
-  // Store camera data in window for external UI access
-  React.useEffect(() => {
-    window.cameraDebugData = {
-      position,
-      target,
-      fov: camera.fov,
-      type: camera.type,
-    };
-  }, [position, target, camera]);
+  if (!showUI) return null;
 
   return (
     <>
+      <Html
+        fullscreen
+        style={{
+          pointerEvents: "none",
+          zIndex: 1000,
+        }}
+      >
+        <div
+          style={{
+            position: "fixed",
+            top: "20px",
+            right: "20px",
+            background: "rgba(0, 0, 0, 0.9)",
+            color: "white",
+            padding: "15px",
+            borderRadius: "8px",
+            fontFamily: "monospace",
+            fontSize: "12px",
+            minWidth: "300px",
+            border: "2px solid #00ff00",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.5)",
+          }}
+        >
+          <div
+            style={{
+              marginBottom: "10px",
+              color: "#00ff00",
+              fontWeight: "bold",
+            }}
+          >
+            📷 CAMERA DEBUG
+          </div>
+
+          <div style={{ marginBottom: "8px" }}>
+            <strong>Position:</strong>
+          </div>
+          <div
+            style={{
+              marginLeft: "10px",
+              marginBottom: "5px",
+              color: "#ff4444",
+            }}
+          >
+            X: {position.x.toFixed(2)} | Y: {position.y.toFixed(2)} | Z:{" "}
+            {position.z.toFixed(2)}
+          </div>
+
+          <div style={{ marginBottom: "8px" }}>
+            <strong>FOV:</strong> {camera.fov?.toFixed(0) || "N/A"}
+          </div>
+
+          <div style={{ marginBottom: "8px" }}>
+            <strong>Camera Type(Press C to toggle):</strong>{" "}
+            <span style={{ color: "#ff0000" }}>
+              {camera.type === "PerspectiveCamera"
+                ? "Perspective"
+                : "Orthographic"}
+            </span>
+          </div>
+
+          <div style={{ marginBottom: "8px" }}>
+            <strong>Focus Target:</strong>
+          </div>
+          <div
+            style={{
+              marginLeft: "10px",
+              marginBottom: "5px",
+              color: "#ff4444",
+            }}
+          >
+            X: {target[0].toFixed(2)} | Y: {target[1].toFixed(2)} | Z:{" "}
+            {target[2].toFixed(2)}
+          </div>
+
+          <div style={{ fontSize: "11px", color: "#888" }}>
+            🎮 WASD - EQ: CAMERA Position | Shift+WASD - EQ: TARGET Position |
+            H: hide
+          </div>
+          <div style={{ fontSize: "11px", color: "#888", marginTop: "3px" }}>
+            🎯 G: grab mode | X/Y/Z: axis lock | C: camera type | ESC: cancel
+          </div>
+        </div>
+      </Html>
       <FocusPointMarker target={target} onTargetChange={setTarget} />
     </>
   );
@@ -672,15 +722,12 @@ function CameraDebugger({ target: externalTarget, onTargetChange }) {
 function PostProcessingEffect() {
   const { gl, scene, camera, size } = useThree();
   const [isEnabled, setIsEnabled] = useState(true);
-
-  // Persistent bloom parameters - don't reset when dependencies change
-  const [bloomParams, setBloomParams] = useState(() => ({
+  const [bloomParams, setBloomParams] = useState({
     threshold: VISUAL_CONFIG.bloom.threshold,
     strength: VISUAL_CONFIG.bloom.strength,
     radius: VISUAL_CONFIG.bloom.radius,
     exposure: VISUAL_CONFIG.bloom.exposure,
-  }));
-
+  });
   const bloomComposer = useRef();
   const finalComposer = useRef();
   const bloomLayer = useRef();
@@ -887,7 +934,7 @@ function PostProcessingEffect() {
   return null;
 }
 
-// Interactive Bloom Controls Component - Developer Mode Only (Fixed Position)
+// Interactive Bloom Controls Component - Developer Mode Only
 function BloomControls() {
   // Early return if developer bloom controls are disabled
   if (
@@ -897,6 +944,7 @@ function BloomControls() {
     return null;
   }
 
+  const [isVisible, setIsVisible] = useState(false);
   const [bloomParams, setBloomParams] = useState({
     threshold: VISUAL_CONFIG.bloom.threshold,
     strength: VISUAL_CONFIG.bloom.strength,
@@ -911,189 +959,90 @@ function BloomControls() {
     }
   }, [bloomParams]);
 
-  // Store bloom data in window for external UI access
-  useEffect(() => {
-    window.bloomDebugData = {
-      bloomParams,
-      setBloomParams,
-    };
-  }, [bloomParams]);
-
-  return null; // Don't render UI here, will be handled externally
-}
-
-// External UI Components (Completely Fixed, Outside Canvas)
-function ExternalCameraDebugUI() {
-  const [cameraData, setCameraData] = useState({
-    position: { x: 0, y: 0, z: 0 },
-    target: [0, 0, 0],
-    fov: 50,
-    type: "PerspectiveCamera",
-  });
-
-  // Poll camera data from window object
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (window.cameraDebugData) {
-        setCameraData(window.cameraDebugData);
-      }
-    }, 100); // Update every 100ms
-
-    return () => clearInterval(interval);
-  }, []);
-
-  if (
-    !DEVELOPER_CONFIG.ENABLE_CAMERA_DEBUG_UI ||
-    !DEVELOPER_CONFIG.ENABLE_DEBUG_MODE
-  ) {
-    return null;
+  if (!isVisible) {
+    return (
+      <div
+        style={{
+          position: "fixed",
+          bottom: "20px",
+          left: "20px",
+          zIndex: 1000,
+          background: "rgba(0, 0, 0, 0.9)",
+          padding: "10px",
+          borderRadius: "8px",
+          border: "2px solid #ff9500",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.5)",
+        }}
+      >
+        <button
+          onClick={() => setIsVisible(true)}
+          style={{
+            background: "#ff9500",
+            color: "white",
+            border: "none",
+            padding: "8px 16px",
+            borderRadius: "6px",
+            cursor: "pointer",
+            fontSize: "12px",
+            fontFamily: "monospace",
+            fontWeight: "bold",
+          }}
+        >
+          🌟 BLOOM DEBUG
+        </button>
+      </div>
+    );
   }
 
   return (
     <div
       style={{
         position: "fixed",
-        bottom: `${DEBUG_UI_CONFIG.bottomMargin}px`,
-        left: `${DEBUG_UI_CONFIG.getPanelPosition(
-          DEBUG_UI_CONFIG.panels.CAMERA_DEBUG.index
-        )}px`,
+        bottom: "20px",
+        left: "20px",
+        zIndex: 1000,
         background: "rgba(0, 0, 0, 0.9)",
         color: "white",
         padding: "15px",
         borderRadius: "8px",
         fontFamily: "monospace",
         fontSize: "12px",
-        minWidth: `${DEBUG_UI_CONFIG.panelWidth}px`,
-        border: `2px solid ${DEBUG_UI_CONFIG.panels.CAMERA_DEBUG.color}`,
+        minWidth: "280px",
+        border: "2px solid #ff9500",
         boxShadow: "0 4px 12px rgba(0, 0, 0, 0.5)",
-        zIndex: 1000,
-        pointerEvents: "auto",
       }}
     >
       <div
         style={{
-          marginBottom: "10px",
-          color: `${DEBUG_UI_CONFIG.panels.CAMERA_DEBUG.color}`,
-          fontWeight: "bold",
-        }}
-      >
-        {DEBUG_UI_CONFIG.panels.CAMERA_DEBUG.icon} Camera Debug
-      </div>
-
-      <div style={{ marginBottom: "8px" }}>
-        <strong>Position:</strong>
-      </div>
-      <div
-        style={{
-          marginLeft: "10px",
-          marginBottom: "5px",
-          color: "#ff4444",
-        }}
-      >
-        X: {cameraData.position.x.toFixed(2)} | Y:{" "}
-        {cameraData.position.y.toFixed(2)} | Z:{" "}
-        {cameraData.position.z.toFixed(2)}
-      </div>
-
-      <div style={{ marginBottom: "8px" }}>
-        <strong>FOV:</strong> {cameraData.fov?.toFixed(0) || "N/A"}
-      </div>
-
-      <div style={{ marginBottom: "8px" }}>
-        <strong>Camera Type (Press C to toggle):</strong>{" "}
-        <span style={{ color: "#ff0000" }}>
-          {cameraData.type === "PerspectiveCamera"
-            ? "Perspective"
-            : "Orthographic"}
-        </span>
-      </div>
-
-      <div style={{ marginBottom: "8px" }}>
-        <strong>Focus Target:</strong>
-      </div>
-      <div
-        style={{
-          marginLeft: "10px",
-          marginBottom: "5px",
-          color: "#ff4444",
-        }}
-      >
-        X: {cameraData.target[0]?.toFixed(2)} | Y:{" "}
-        {cameraData.target[1]?.toFixed(2)} | Z:{" "}
-        {cameraData.target[2]?.toFixed(2)}
-      </div>
-
-      <div style={{ fontSize: "11px", color: "#888" }}>
-        🎮 WASD - EQ: CAMERA Position | Shift+WASD - EQ: TARGET Position
-      </div>
-      <div style={{ fontSize: "11px", color: "#888", marginTop: "3px" }}>
-        🎯 G: grab mode | X/Y/Z: axis lock | C: camera type | ESC: cancel
-      </div>
-    </div>
-  );
-}
-
-function ExternalBloomDebugUI() {
-  // Start with default values, update from window data when available
-  const [bloomData, setBloomData] = useState(() => ({
-    bloomParams: {
-      threshold: VISUAL_CONFIG.bloom.threshold,
-      strength: VISUAL_CONFIG.bloom.strength,
-      radius: VISUAL_CONFIG.bloom.radius,
-      exposure: VISUAL_CONFIG.bloom.exposure,
-    },
-    setBloomParams: null,
-  }));
-
-  // Poll bloom data from window object
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (window.bloomDebugData) {
-        setBloomData(window.bloomDebugData);
-      }
-    }, 100); // Update every 100ms
-
-    return () => clearInterval(interval);
-  }, []);
-
-  if (
-    !DEVELOPER_CONFIG.ENABLE_BLOOM_DEBUG_UI ||
-    !DEVELOPER_CONFIG.ENABLE_DEBUG_MODE
-  ) {
-    return null;
-  }
-
-  const { bloomParams, setBloomParams } = bloomData;
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        bottom: `${DEBUG_UI_CONFIG.bottomMargin}px`,
-        left: `${DEBUG_UI_CONFIG.getPanelPosition(
-          DEBUG_UI_CONFIG.panels.BLOOM_DEBUG.index
-        )}px`,
-        background: "rgba(0, 0, 0, 0.9)",
-        color: "white",
-        padding: "15px",
-        borderRadius: "8px",
-        fontFamily: "monospace",
-        fontSize: "12px",
-        minWidth: `${DEBUG_UI_CONFIG.panelWidth}px`,
-        border: `2px solid ${DEBUG_UI_CONFIG.panels.BLOOM_DEBUG.color}`,
-        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.5)",
-        zIndex: 1000,
-        pointerEvents: "auto",
-      }}
-    >
-      <div
-        style={{
-          color: `${DEBUG_UI_CONFIG.panels.BLOOM_DEBUG.color}`,
-          fontWeight: "bold",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
           marginBottom: "15px",
         }}
       >
-        {DEBUG_UI_CONFIG.panels.BLOOM_DEBUG.icon} BLOOM DEBUG
+        <div
+          style={{
+            color: "#ff9500",
+            fontWeight: "bold",
+          }}
+        >
+          🌟 BLOOM DEBUG
+        </div>
+        <button
+          onClick={() => setIsVisible(false)}
+          style={{
+            background: "#f44336",
+            color: "white",
+            border: "none",
+            padding: "4px 8px",
+            borderRadius: "4px",
+            cursor: "pointer",
+            fontSize: "12px",
+            fontFamily: "monospace",
+          }}
+        >
+          ✕
+        </button>
       </div>
 
       <div style={{ marginBottom: "15px" }}>
@@ -1107,23 +1056,12 @@ function ExternalBloomDebugUI() {
           step="0.01"
           value={bloomParams.threshold}
           onChange={(e) =>
-            setBloomParams &&
             setBloomParams((prev) => ({
               ...prev,
               threshold: parseFloat(e.target.value),
             }))
           }
-          style={{
-            width: "100%",
-            cursor: "pointer",
-            pointerEvents: "auto",
-            WebkitAppearance: "none",
-            appearance: "none",
-            height: "6px",
-            borderRadius: "3px",
-            background: "#333",
-            outline: "none",
-          }}
+          style={{ width: "100%" }}
         />
       </div>
 
@@ -1138,23 +1076,12 @@ function ExternalBloomDebugUI() {
           step="0.1"
           value={bloomParams.strength}
           onChange={(e) =>
-            setBloomParams &&
             setBloomParams((prev) => ({
               ...prev,
               strength: parseFloat(e.target.value),
             }))
           }
-          style={{
-            width: "100%",
-            cursor: "pointer",
-            pointerEvents: "auto",
-            WebkitAppearance: "none",
-            appearance: "none",
-            height: "6px",
-            borderRadius: "3px",
-            background: "#333",
-            outline: "none",
-          }}
+          style={{ width: "100%" }}
         />
       </div>
 
@@ -1169,23 +1096,12 @@ function ExternalBloomDebugUI() {
           step="0.01"
           value={bloomParams.radius}
           onChange={(e) =>
-            setBloomParams &&
             setBloomParams((prev) => ({
               ...prev,
               radius: parseFloat(e.target.value),
             }))
           }
-          style={{
-            width: "100%",
-            cursor: "pointer",
-            pointerEvents: "auto",
-            WebkitAppearance: "none",
-            appearance: "none",
-            height: "6px",
-            borderRadius: "3px",
-            background: "#333",
-            outline: "none",
-          }}
+          style={{ width: "100%" }}
         />
       </div>
 
@@ -1200,7 +1116,6 @@ function ExternalBloomDebugUI() {
           step="0.1"
           value={bloomParams.exposure}
           onChange={(e) =>
-            setBloomParams &&
             setBloomParams((prev) => ({
               ...prev,
               exposure: parseFloat(e.target.value),
@@ -1215,75 +1130,6 @@ function ExternalBloomDebugUI() {
       </div>
     </div>
   );
-}
-
-// 🚀 FUTURE PANEL TEMPLATE - Ready for easy expansion
-// Copy this template and modify for new debug panels
-function ExternalLightingDebugUI() {
-  // Uncomment when implementing lighting debug
-  /*
-  const [lightingData, setLightingData] = useState({
-    ambientIntensity: VISUAL_CONFIG.ambientLight.intensity,
-    keyLightIntensity: VISUAL_CONFIG.keyLight.intensity,
-    fillLightIntensity: VISUAL_CONFIG.fillLight.intensity,
-    rimLightIntensity: VISUAL_CONFIG.rimLight.intensity,
-  });
-
-  // Poll lighting data from window object
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (window.lightingDebugData) {
-        setLightingData(window.lightingDebugData);
-      }
-    }, 100);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  if (
-    !DEVELOPER_CONFIG.ENABLE_LIGHTING_DEBUG_UI ||
-    !DEVELOPER_CONFIG.ENABLE_DEBUG_MODE
-  ) {
-    return null;
-  }
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        bottom: `${DEBUG_UI_CONFIG.bottomMargin}px`,
-        left: `${DEBUG_UI_CONFIG.getPanelPosition(DEBUG_UI_CONFIG.panels.LIGHTING_DEBUG.index)}px`,
-        background: "rgba(0, 0, 0, 0.9)",
-        color: "white",
-        padding: "15px",
-        borderRadius: "8px",
-        fontFamily: "monospace",
-        fontSize: "12px",
-        minWidth: `${DEBUG_UI_CONFIG.panelWidth}px`,
-        border: `2px solid ${DEBUG_UI_CONFIG.panels.LIGHTING_DEBUG.color}`,
-        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.5)",
-        zIndex: 1000,
-        pointerEvents: "auto",
-      }}
-    >
-      <div
-        style={{
-          color: `${DEBUG_UI_CONFIG.panels.LIGHTING_DEBUG.color}`,
-          fontWeight: "bold",
-          marginBottom: "15px",
-        }}
-      >
-        {DEBUG_UI_CONFIG.panels.LIGHTING_DEBUG.icon} LIGHTING DEBUG
-      </div>
-      
-      // Add lighting controls here...
-      
-    </div>
-  );
-  */
-
-  // Return null when not implemented
-  return null;
 }
 
 function Model({ target, onTargetChange }) {
@@ -1726,18 +1572,10 @@ export default function Scene() {
         <ControlledOrbitControls target={sharedTarget} />
         {/* High-Quality Selective Bloom System */}
         <PostProcessingEffect />
-        {/* 🌟 DEVELOPER ONLY: Interactive Bloom Controls (Fixed Position) */}
-        <BloomControls />
       </Canvas>
-
-      {/* External Fixed UI Components (Completely Outside Canvas) */}
-      <ExternalCameraDebugUI />
-      <ExternalBloomDebugUI />
-      {/* 🚀 Future panels ready for implementation:
-      <ExternalLightingDebugUI />
-      <ExternalPerformanceDebugUI />
-      <ExternalMaterialDebugUI />
-      */}
+      {/* 🌟 DEVELOPER ONLY: Interactive Bloom Controls */}
+      {DEVELOPER_CONFIG.ENABLE_BLOOM_DEBUG_UI &&
+        DEVELOPER_CONFIG.ENABLE_DEBUG_MODE && <BloomControls />}
     </>
   );
 }
