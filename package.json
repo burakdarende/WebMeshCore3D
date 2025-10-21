@@ -1,7 +1,7 @@
 {
-  "name": "bdr-room",
+  "name": "webmeshcore3d",
   "version": "1.0.0",
-  "description": "Professional 3D Scene System - Free alternative to Spline with advanced camera controls and professional lighting",
+  "description": "Enterprise-grade 3D Scene Framework - Professional visualization system for modern web applications",
   "private": false,
   "author": {
     "name": "Burak Darende",
@@ -10,24 +10,27 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/burakdarende/bdr_room.git"
+    "url": "https://github.com/burakdarende/WebMeshCore3D.git"
   },
-  "homepage": "https://github.com/burakdarende/bdr_room",
+  "homepage": "https://github.com/burakdarende/WebMeshCore3D",
   "bugs": {
-    "url": "https://github.com/burakdarende/bdr_room/issues"
+    "url": "https://github.com/burakdarende/WebMeshCore3D/issues"
   },
   "license": "MIT",
   "keywords": [
     "3d",
     "threejs",
     "react-three-fiber",
-    "spline-alternative",
+    "webmeshcore3d",
+    "3d-framework",
     "camera-controls",
     "bloom-effects",
     "webgl",
-    "3d-editor",
+    "3d-visualization",
     "three-js",
-    "nextjs"
+    "nextjs",
+    "enterprise-3d",
+    "modular-3d"
   ],
   "scripts": {
     "dev": "next dev",
