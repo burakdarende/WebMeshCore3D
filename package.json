@@ -1,7 +1,34 @@
 {
-  "name": "my-3d-app",
-  "version": "0.1.0",
-  "private": true,
+  "name": "bdr-room",
+  "version": "1.0.0",
+  "description": "Professional 3D Scene System - Free alternative to Spline with advanced camera controls and professional lighting",
+  "private": false,
+  "author": {
+    "name": "Burak Darende",
+    "email": "hello@burakdarende.com",
+    "url": "https://burakdarende.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/burakdarende/bdr_room.git"
+  },
+  "homepage": "https://github.com/burakdarende/bdr_room",
+  "bugs": {
+    "url": "https://github.com/burakdarende/bdr_room/issues"
+  },
+  "license": "MIT",
+  "keywords": [
+    "3d",
+    "threejs",
+    "react-three-fiber",
+    "spline-alternative",
+    "camera-controls",
+    "bloom-effects",
+    "webgl",
+    "3d-editor",
+    "three-js",
+    "nextjs"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
