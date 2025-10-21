@@ -102,12 +102,29 @@ const gltf = useLoader(GLTFLoader, "/models/your-model.glb");
 
 #### Production Deployment:
 
+⚠️ **ÖNEMLİ: Production'a geçmeden önce mutlaka yapılması gerekenler!**
+
 ```jsx
 // src/config/app-config.js
+
+// 1️⃣ Debug modunu kapat
 export const DEVELOPER_CONFIG = {
-  ENABLE_DEBUG_MODE: false, // Tüm debug UI'ı kapat
+  ENABLE_DEBUG_MODE: false, // Tüm debug UI'ı kapat - MUTLAKA false yapın!
 };
 
+// 2️⃣ Build konfigürasyonunu production'a çevir
+export const BUILD_CONFIG = {
+  version: "1.0.0",
+  buildDate: new Date().toISOString(),
+  environment: "production", // MUTLAKA "production" yapın!
+  features: {
+    debug: false, // Debug'ı kapat
+    analytics: true, // Analytics'i aç
+    errorReporting: true, // Hata raporlamayı aç
+  },
+};
+
+// 3️⃣ Performans ayarları
 export const VISUAL_CONFIG = {
   qualityPreset: "high", // low/medium/high/ultra
   bloom: {
@@ -117,6 +134,14 @@ export const VISUAL_CONFIG = {
   },
 };
 ```
+
+**Production Checklist:**
+
+- [ ] `ENABLE_DEBUG_MODE: false` ✅
+- [ ] `environment: "production"` ✅
+- [ ] `debug: false` ✅
+- [ ] `analytics: true` ✅
+- [ ] `errorReporting: true` ✅
 
 #### Camera Fine-tuning:
 
@@ -256,12 +281,29 @@ const gltf = useLoader(GLTFLoader, "/models/your-model.glb");
 
 #### Production Deployment:
 
+⚠️ **CRITICAL: Essential steps before production deployment!**
+
 ```jsx
 // src/config/app-config.js
+
+// 1️⃣ Disable debug mode
 export const DEVELOPER_CONFIG = {
-  ENABLE_DEBUG_MODE: false, // Disable all debug UI
+  ENABLE_DEBUG_MODE: false, // Disable all debug UI - MUST be false!
 };
 
+// 2️⃣ Set build configuration to production
+export const BUILD_CONFIG = {
+  version: "1.0.0",
+  buildDate: new Date().toISOString(),
+  environment: "production", // MUST be "production"!
+  features: {
+    debug: false, // Disable debug features
+    analytics: true, // Enable analytics
+    errorReporting: true, // Enable error reporting
+  },
+};
+
+// 3️⃣ Performance settings
 export const VISUAL_CONFIG = {
   qualityPreset: "high", // low/medium/high/ultra
   bloom: {
@@ -271,6 +313,14 @@ export const VISUAL_CONFIG = {
   },
 };
 ```
+
+**Production Checklist:**
+
+- [ ] `ENABLE_DEBUG_MODE: false` ✅
+- [ ] `environment: "production"` ✅
+- [ ] `debug: false` ✅
+- [ ] `analytics: true` ✅
+- [ ] `errorReporting: true` ✅
 
 #### Camera Fine-tuning:
 
@@ -369,6 +419,15 @@ src/
 - Optimized asset loading
 - Memory leak prevention
 - SEO-friendly SSR support
+
+**🚨 DEPLOYMENT WARNING:** Always verify production configuration before deployment:
+
+```bash
+# Before deployment, check these critical settings:
+# 1. ENABLE_DEBUG_MODE: false
+# 2. BUILD_CONFIG.environment: "production"
+# 3. BUILD_CONFIG.features.debug: false
+```
 
 ## 📸 Screenshots
 
