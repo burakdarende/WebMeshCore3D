@@ -660,16 +660,18 @@ export default function Scene() {
           />
         </Suspense>
         {/* Camera System handles switching automatically */}
-        {/* Optimized Contact Shadows for subtle realism */}
+        {/* Optimized Contact Shadows for subtle realism - Disabled for cleaner look */}
+        {/* 
         <ContactShadows
           position={[0, 0, 0]}
-          opacity={0.2}
-          scale={20}
-          blur={2}
-          far={3}
-          resolution={128} // Reduced for performance
+          opacity={0.05}  // Much lighter
+          scale={8}       // Smaller area
+          blur={3}
+          far={2}
+          resolution={64} // Lower resolution
           color="#000000"
         />
+        */}
         {/* Camera System includes OrbitControls and Debug Features */}
         <CameraSystem
           DEVELOPER_CONFIG={DEVELOPER_CONFIG}

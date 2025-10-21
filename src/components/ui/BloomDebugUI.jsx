@@ -93,13 +93,13 @@ export function BloomDebugUI({
 
       <div style={{ marginBottom: "15px" }}>
         <label style={{ display: "block", marginBottom: "5px" }}>
-          Threshold: {bloomParams.threshold?.toFixed(2) || "0.10"}
+          Threshold: {bloomParams.threshold?.toFixed(3) || "0.100"}
         </label>
         <input
           type="range"
           min="0"
           max="1"
-          step="0.01"
+          step="0.001" // Much more precise (0.1% steps)
           value={bloomParams.threshold || 0.1}
           onChange={(e) =>
             setBloomParams &&
@@ -114,13 +114,13 @@ export function BloomDebugUI({
 
       <div style={{ marginBottom: "15px" }}>
         <label style={{ display: "block", marginBottom: "5px" }}>
-          Strength: {bloomParams.strength?.toFixed(2) || "0.00"}
+          Strength: {bloomParams.strength?.toFixed(3) || "0.000"}
         </label>
         <input
           type="range"
           min="0"
           max="3"
-          step="0.1"
+          step="0.01" // More precise (1% steps instead of 10%)
           value={bloomParams.strength || 0.0}
           onChange={(e) =>
             setBloomParams &&
@@ -135,13 +135,13 @@ export function BloomDebugUI({
 
       <div style={{ marginBottom: "15px" }}>
         <label style={{ display: "block", marginBottom: "5px" }}>
-          Radius: {bloomParams.radius?.toFixed(2) || "0.22"}
+          Radius: {bloomParams.radius?.toFixed(3) || "0.220"}
         </label>
         <input
           type="range"
           min="0"
           max="1"
-          step="0.01"
+          step="0.001" // Much more precise (0.1% steps)
           value={bloomParams.radius || 0.22}
           onChange={(e) =>
             setBloomParams &&
@@ -156,13 +156,13 @@ export function BloomDebugUI({
 
       <div style={{ marginBottom: "15px" }}>
         <label style={{ display: "block", marginBottom: "5px" }}>
-          Exposure: {bloomParams.exposure?.toFixed(2) || "1.00"}
+          Exposure: {bloomParams.exposure?.toFixed(3) || "1.000"}
         </label>
         <input
           type="range"
           min="0.1"
           max="2"
-          step="0.1"
+          step="0.01" // More precise (1% steps instead of 10%)
           value={bloomParams.exposure || 1.0}
           onChange={(e) =>
             setBloomParams &&
