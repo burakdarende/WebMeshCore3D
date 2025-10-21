@@ -1,14 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🎛️ MERKEZI KONFIGÜRASYON DOSYASI
+// WebMeshCore3D v1.0 by Burak Darende - https://burakdarende.com
+//
+// DEVELOPER & DEBUG CONFIGURATION
+// CENTRAL CONFIGURATION FILE
+// All system settings are consolidated in this file.
+// Developers can configure the entire system by editing this file.
 // ═══════════════════════════════════════════════════════════════════════════════
-// Tüm sistem ayarları bu dosyada toplanmıştır.
-// Developer'lar bu dosyayı düzenleyerek tüm sistemi konfigüre edebilir.
-
 import * as THREE from "three";
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// 🐛 DEVELOPER & DEBUG CONFIGURATION
-// ═══════════════════════════════════════════════════════════════════════════════
 
 export const DEVELOPER_CONFIG = {
   // 🐛 Master switch for all debug features

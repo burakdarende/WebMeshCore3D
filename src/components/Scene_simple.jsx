@@ -1,14 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// 3D SCENE SYSTEM v1.0 by Burak Darende - https://burakdarende.com
-// ═══════════════════════════════════════════════════════════════════════════════
-//
-// 🚀 PRODUCTION DEPLOYMENT CHECKLIST:
-// 1. Set ENABLE_DEBUG_MODE = false     (hides all debug UI)
-// 2. Set ENABLE_CONSOLE_LOGS = false   (hides all console output)
-// 3. Set ENABLE_FOCUS_CONTROL = false  (disables G+X/Y/Z controls)
-// 4. Set ENABLE_CAMERA_DEBUG_UI = false (hides debug overlay)
-//
-// This will give you a clean production build with zero debug output!
+// WebMeshCore3D v1.0 by Burak Darende - https://burakdarende.com
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, {
