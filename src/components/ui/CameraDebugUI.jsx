@@ -3,11 +3,13 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect } from "react";
+import { useDebugUIPosition } from "./UILayoutManager";
 
 // External UI Components (Completely Fixed, Outside Canvas)
 export function CameraDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
   // Don't use local state - use window data directly
   const [windowData, setWindowData] = useState(null);
+  const { position, isVisible } = useDebugUIPosition("cameraDebug");
 
   // Poll camera data from window object
   useEffect(() => {
@@ -21,9 +23,10 @@ export function CameraDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
   }, []);
 
   if (
-    !DEVELOPER_CONFIG.ENABLE_CAMERA_DEBUG_UI ||
     !DEVELOPER_CONFIG.ENABLE_DEBUG_MODE ||
-    !windowData
+    !windowData ||
+    !isVisible ||
+    !position
   ) {
     return null;
   }
@@ -32,21 +35,22 @@ export function CameraDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
     <div
       style={{
         position: "fixed",
-        bottom: `${DEBUG_UI_CONFIG.bottomMargin}px`,
-        left: `${DEBUG_UI_CONFIG.getPanelPosition(
-          DEBUG_UI_CONFIG.panels.CAMERA_DEBUG.index
-        )}px`,
+        ...(position.bottom !== undefined
+          ? { bottom: `${position.bottom}px` }
+          : { top: `${position.top}px` }),
+        left: `${position.left}px`,
+        width: `${position.width}px`,
         background: "rgba(0, 0, 0, 0.9)",
         color: "white",
         padding: "15px",
         borderRadius: "8px",
         fontFamily: "monospace",
         fontSize: "12px",
-        minWidth: `${DEBUG_UI_CONFIG.panelWidth}px`,
         border: `2px solid ${DEBUG_UI_CONFIG.panels.CAMERA_DEBUG.color}`,
         boxShadow: "0 4px 12px rgba(0, 0, 0, 0.5)",
         zIndex: 1000,
         pointerEvents: "auto",
+        backdropFilter: "blur(10px)",
       }}
     >
       <div

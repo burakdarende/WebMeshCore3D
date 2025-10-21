@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect } from "react";
+import { useDebugUIPosition } from "./UILayoutManager";
 
 export function BloomDebugUI({
   DEVELOPER_CONFIG,
@@ -20,6 +21,8 @@ export function BloomDebugUI({
     setBloomParams: null,
   }));
 
+  const { position, isVisible } = useDebugUIPosition("bloomDebug");
+
   // Poll bloom data from window object
   useEffect(() => {
     const interval = setInterval(() => {
@@ -31,10 +34,22 @@ export function BloomDebugUI({
     return () => clearInterval(interval);
   }, []);
 
+  // Debug info
+  useEffect(() => {
+    console.log("BloomDebugUI - State:", {
+      ENABLE_DEBUG_MODE: DEVELOPER_CONFIG.ENABLE_DEBUG_MODE,
+      bloomData: !!bloomData,
+      isVisible,
+      position,
+      windowBloomDebugData: !!window.bloomDebugData,
+    });
+  }, [DEVELOPER_CONFIG.ENABLE_DEBUG_MODE, bloomData, isVisible, position]);
+
   if (
-    !DEVELOPER_CONFIG.ENABLE_BLOOM_DEBUG_UI ||
     !DEVELOPER_CONFIG.ENABLE_DEBUG_MODE ||
-    !bloomData
+    !bloomData ||
+    !isVisible ||
+    !position
   ) {
     return null;
   }
@@ -45,19 +60,23 @@ export function BloomDebugUI({
     <div
       style={{
         position: "fixed",
-        bottom: `${DEBUG_UI_CONFIG.bottomMargin}px`,
-        left: `${DEBUG_UI_CONFIG.getPanelPosition(
-          DEBUG_UI_CONFIG.panels.BLOOM_DEBUG.index
-        )}px`,
+        ...(position.bottom !== undefined
+          ? { bottom: `${position.bottom}px` }
+          : { top: `${position.top}px` }),
+        left:
+          typeof position.left === "string"
+            ? position.left
+            : `${position.left}px`,
+        width: `${position.width}px`,
         background: "rgba(0, 0, 0, 0.9)",
         color: "white",
         padding: "15px",
         borderRadius: "8px",
         fontFamily: "monospace",
         fontSize: "12px",
-        minWidth: `${DEBUG_UI_CONFIG.panelWidth}px`,
         border: `2px solid ${DEBUG_UI_CONFIG.panels.BLOOM_DEBUG.color}`,
         boxShadow: "0 4px 12px rgba(0, 0, 0, 0.5)",
+        backdropFilter: "blur(10px)",
         zIndex: 1000,
         pointerEvents: "auto",
       }}
@@ -74,14 +93,14 @@ export function BloomDebugUI({
 
       <div style={{ marginBottom: "15px" }}>
         <label style={{ display: "block", marginBottom: "5px" }}>
-          Threshold: {bloomParams.threshold.toFixed(2)}
+          Threshold: {bloomParams.threshold?.toFixed(2) || "0.10"}
         </label>
         <input
           type="range"
           min="0"
           max="1"
           step="0.01"
-          value={bloomParams.threshold}
+          value={bloomParams.threshold || 0.1}
           onChange={(e) =>
             setBloomParams &&
             setBloomParams((prev) => ({
@@ -95,14 +114,14 @@ export function BloomDebugUI({
 
       <div style={{ marginBottom: "15px" }}>
         <label style={{ display: "block", marginBottom: "5px" }}>
-          Strength: {bloomParams.strength.toFixed(2)}
+          Strength: {bloomParams.strength?.toFixed(2) || "0.00"}
         </label>
         <input
           type="range"
           min="0"
           max="3"
           step="0.1"
-          value={bloomParams.strength}
+          value={bloomParams.strength || 0.0}
           onChange={(e) =>
             setBloomParams &&
             setBloomParams((prev) => ({
@@ -116,14 +135,14 @@ export function BloomDebugUI({
 
       <div style={{ marginBottom: "15px" }}>
         <label style={{ display: "block", marginBottom: "5px" }}>
-          Radius: {bloomParams.radius.toFixed(2)}
+          Radius: {bloomParams.radius?.toFixed(2) || "0.22"}
         </label>
         <input
           type="range"
           min="0"
           max="1"
           step="0.01"
-          value={bloomParams.radius}
+          value={bloomParams.radius || 0.22}
           onChange={(e) =>
             setBloomParams &&
             setBloomParams((prev) => ({
@@ -137,14 +156,14 @@ export function BloomDebugUI({
 
       <div style={{ marginBottom: "15px" }}>
         <label style={{ display: "block", marginBottom: "5px" }}>
-          Exposure: {bloomParams.exposure.toFixed(2)}
+          Exposure: {bloomParams.exposure?.toFixed(2) || "1.00"}
         </label>
         <input
           type="range"
           min="0.1"
           max="2"
           step="0.1"
-          value={bloomParams.exposure}
+          value={bloomParams.exposure || 1.0}
           onChange={(e) =>
             setBloomParams &&
             setBloomParams((prev) => ({

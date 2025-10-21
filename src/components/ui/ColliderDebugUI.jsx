@@ -4,6 +4,7 @@
 // Original external UI panel - exactly as it was before
 
 import React, { useState, useEffect } from "react";
+import { useDebugUIPosition } from "./UILayoutManager";
 import {
   COLLIDER_CONFIG,
   ColliderUtils,
@@ -19,6 +20,7 @@ export function ColliderDebugUI({
 }) {
   const [jsonCode, setJsonCode] = useState("");
   const [showJsonEditor, setShowJsonEditor] = useState(false);
+  const { position, isVisible } = useDebugUIPosition("colliderDebug");
 
   // Update JSON when colliders change
   useEffect(() => {
@@ -64,25 +66,6 @@ export function ColliderDebugUI({
     }
   };
 
-  const applyJsonCode = () => {
-    try {
-      const importedColliders = ColliderUtils.importFromJSON(jsonCode);
-      const validColliders = importedColliders.filter(
-        ColliderUtils.validateCollider
-      );
-
-      if (validColliders.length > 0) {
-        onCollidersUpdate(validColliders);
-        onSelectCollider(null);
-        alert(`✅ Successfully imported ${validColliders.length} colliders`);
-      } else {
-        alert("❌ No valid colliders found in JSON");
-      }
-    } catch (error) {
-      alert(`❌ Invalid JSON: ${error.message}`);
-    }
-  };
-
   const selectedColliderData = colliders.find((c) => c.id === selectedCollider);
 
   if (!process.env.NODE_ENV || process.env.NODE_ENV === "development") {
@@ -91,22 +74,26 @@ export function ColliderDebugUI({
     return null;
   }
 
+  if (!isVisible || !position) {
+    return null;
+  }
+
   return (
     <div
       style={{
         position: "fixed",
-        bottom: "20px",
-        left: `${20 + 3 * (320 + 50)}px`, // After other panels
+        top: `${position.top}px`,
+        left: `${position.left}px`,
+        width: `${position.width}px`,
         background: "rgba(0, 0, 0, 0.9)",
         color: "white",
         padding: "15px",
         borderRadius: "8px",
         fontFamily: "monospace",
         fontSize: "12px",
-        minWidth: "320px",
-        maxWidth: "400px",
         border: "2px solid #ff00ff",
         boxShadow: "0 4px 12px rgba(0, 0, 0, 0.5)",
+        backdropFilter: "blur(10px)",
         zIndex: 1000,
         pointerEvents: "auto",
         maxHeight: "600px",
@@ -285,7 +272,10 @@ export function ColliderDebugUI({
               }}
             >
               Scale: [
-              {selectedColliderData.scale.map((v) => v.toFixed(2)).join(", ")}]
+              {selectedColliderData.size
+                ? selectedColliderData.size.map((v) => v.toFixed(2)).join(", ")
+                : "0, 0, 0"}
+              ]
             </label>
             {["X", "Y", "Z"].map((axis, index) => (
               <div
@@ -313,15 +303,21 @@ export function ColliderDebugUI({
                     type="number"
                     step="0.001"
                     min="0.001"
-                    value={selectedColliderData.scale[index]}
+                    value={
+                      selectedColliderData.size
+                        ? selectedColliderData.size[index]
+                        : 1
+                    }
                     onChange={(e) => {
                       const value = e.target.value;
                       if (value === "") return; // Allow empty
                       const newValue = parseFloat(value);
                       if (!isNaN(newValue) && newValue > 0) {
-                        const newScale = [...selectedColliderData.scale];
-                        newScale[index] = Math.max(0.001, newValue);
-                        updateSelectedCollider({ scale: newScale });
+                        const newSize = [
+                          ...(selectedColliderData.size || [1, 1, 1]),
+                        ];
+                        newSize[index] = Math.max(0.001, newValue);
+                        updateSelectedCollider({ size: newSize });
                       }
                     }}
                     onKeyDown={(e) => {
@@ -348,11 +344,17 @@ export function ColliderDebugUI({
                     min="0.1"
                     max="5"
                     step="0.01"
-                    value={selectedColliderData.scale[index]}
+                    value={
+                      selectedColliderData.size
+                        ? selectedColliderData.size[index]
+                        : 1
+                    }
                     onChange={(e) => {
-                      const newScale = [...selectedColliderData.scale];
-                      newScale[index] = parseFloat(e.target.value);
-                      updateSelectedCollider({ scale: newScale });
+                      const newSize = [
+                        ...(selectedColliderData.size || [1, 1, 1]),
+                      ];
+                      newSize[index] = parseFloat(e.target.value);
+                      updateSelectedCollider({ size: newSize });
                     }}
                     style={{
                       flex: "1",
@@ -446,10 +448,27 @@ export function ColliderDebugUI({
             {selectedColliderData.animation && (
               <button
                 onClick={() => {
+                  const animName = selectedColliderData.animation;
+                  console.log(
+                    `🎯 ColliderDebugUI - Selected animation: '${animName}'`
+                  );
+                  console.log(`🔗 Animation mapping:`, window.animationMapping);
+
+                  if (!animName) {
+                    alert("Please select an animation first!");
+                    return;
+                  }
+
                   if (window.modelAnimations) {
-                    window.modelAnimations.play(selectedColliderData.animation);
+                    console.log(`🎬 Testing animation: ${animName}`);
+                    window.modelAnimations.play(animName);
                   } else {
-                    console.warn("⚠️ Animation system not ready");
+                    console.warn(
+                      "⚠️ Animation system not ready - Model may still be loading"
+                    );
+                    alert(
+                      "Animation system not ready. Make sure the 3D model is fully loaded."
+                    );
                   }
                 }}
                 style={{
@@ -492,21 +511,6 @@ export function ColliderDebugUI({
           {showJsonEditor && (
             <>
               <button
-                onClick={applyJsonCode}
-                style={{
-                  background: "#ffc107",
-                  color: "black",
-                  border: "none",
-                  padding: "6px 10px",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  fontSize: "10px",
-                  marginRight: "10px",
-                }}
-              >
-                ✅ Apply JSON
-              </button>
-              <button
                 onClick={copyJsonToClipboard}
                 style={{
                   background: "#28a745",
@@ -525,23 +529,39 @@ export function ColliderDebugUI({
         </div>
 
         {showJsonEditor && (
-          <textarea
-            value={jsonCode}
-            onChange={(e) => setJsonCode(e.target.value)}
-            style={{
-              width: "100%",
-              height: "200px",
-              padding: "8px",
-              background: "#1a1a1a",
-              color: "#00ff00",
-              border: "1px solid #333",
-              borderRadius: "4px",
-              fontSize: "9px",
-              fontFamily: "monospace",
-              resize: "vertical",
-            }}
-            placeholder="JSON collider data..."
-          />
+          <div>
+            <div
+              style={{
+                fontSize: "10px",
+                color: "#ffc107",
+                marginBottom: "8px",
+                padding: "8px",
+                background: "rgba(255, 193, 7, 0.1)",
+                borderRadius: "4px",
+                border: "1px solid rgba(255, 193, 7, 0.3)",
+              }}
+            >
+              📝 To edit colliders, copy this JSON and paste it into: <br />
+              <code style={{ color: "#00ff88" }}>public/collider.json</code>
+            </div>
+            <textarea
+              value={jsonCode}
+              readOnly
+              style={{
+                width: "100%",
+                height: "200px",
+                padding: "8px",
+                background: "#1a1a1a",
+                color: "#00ff00",
+                border: "1px solid #333",
+                borderRadius: "4px",
+                fontSize: "9px",
+                fontFamily: "monospace",
+                resize: "vertical",
+              }}
+              placeholder="JSON collider data..."
+            />
+          </div>
         )}
       </div>
 

@@ -87,7 +87,7 @@ function FocusPointMarker({
 
   // Global keyboard handler for G/X/Y/Z keys (only active in debug mode)
   useEffect(() => {
-    if (!DEVELOPER_CONFIG.ENABLE_FOCUS_CONTROL) return;
+    if (!DEVELOPER_CONFIG.ENABLE_DEBUG_MODE) return;
 
     const handleKeyDown = (event) => {
       const key = event.key.toLowerCase();
@@ -117,7 +117,7 @@ function FocusPointMarker({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [grabMode, DEVELOPER_CONFIG.ENABLE_FOCUS_CONTROL]);
+  }, [grabMode, DEVELOPER_CONFIG.ENABLE_DEBUG_MODE]);
 
   // Notify parent about grab mode changes
   useEffect(() => {
@@ -381,7 +381,7 @@ export function CameraControls({
 
       {/* Focus Point Marker - only show in debug mode with focus control enabled */}
       {DEVELOPER_CONFIG?.ENABLE_DEBUG_MODE &&
-        DEVELOPER_CONFIG?.ENABLE_FOCUS_CONTROL && (
+        DEVELOPER_CONFIG?.ENABLE_DEBUG_MODE && (
           <FocusPointMarker
             target={target}
             onTargetChange={onTargetChange}

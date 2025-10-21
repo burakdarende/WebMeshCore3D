@@ -61,11 +61,8 @@ export const DEFAULT_COLLIDERS = [
 
 // 🎭 Available animations (will be populated from GLTF)
 export const AVAILABLE_ANIMATIONS = [
-  { id: "idle", name: "Idle", duration: 2.0 },
-  { id: "wave", name: "Wave", duration: 1.5 },
-  { id: "bounce", name: "Bounce", duration: 1.0 },
-  { id: "rotate", name: "Rotate", duration: 3.0 },
-  // More animations will be auto-detected from GLTF files
+  // Animations will be auto-detected from GLTF model
+  // Generic names (anim1, anim2, etc.) will be generated dynamically
 ];
 
 // 🔧 Collider helper functions
@@ -78,7 +75,7 @@ export const ColliderUtils = {
   createNewCollider: (position = [0, 1, 0]) => ({
     id: ColliderUtils.generateId(),
     position: [...position],
-    scale: [...COLLIDER_CONFIG.defaults.scale],
+    size: [...COLLIDER_CONFIG.defaults.scale],
     rotation: [...COLLIDER_CONFIG.defaults.rotation],
     link: "",
     animation: null,
@@ -104,7 +101,7 @@ export const ColliderUtils = {
 
   // Validate collider data
   validateCollider: (collider) => {
-    const required = ["id", "position", "scale", "rotation"];
+    const required = ["id", "position", "size", "rotation"];
     return required.every((field) => collider.hasOwnProperty(field));
   },
 };

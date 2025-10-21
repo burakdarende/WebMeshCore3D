@@ -3,12 +3,14 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect } from "react";
+import { useDebugUIPosition } from "./UILayoutManager";
 
 // 🚀 FUTURE PANEL TEMPLATE - Ready for easy expansion
 // Copy this template and modify for new debug panels
 export function LightingDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
   // Don't use local state - use window data directly
   const [windowData, setWindowData] = useState(null);
+  const { position, isVisible } = useDebugUIPosition("lightingDebug");
 
   // Poll lighting data from window object
   useEffect(() => {
@@ -21,10 +23,22 @@ export function LightingDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
     return () => clearInterval(interval);
   }, []);
 
+  // Debug info
+  useEffect(() => {
+    console.log("LightingDebugUI - State:", {
+      ENABLE_DEBUG_MODE: DEVELOPER_CONFIG.ENABLE_DEBUG_MODE,
+      windowData: !!windowData,
+      isVisible,
+      position,
+      lightingDebugData: !!window.lightingDebugData,
+    });
+  }, [DEVELOPER_CONFIG.ENABLE_DEBUG_MODE, windowData, isVisible, position]);
+
   if (
-    !DEVELOPER_CONFIG.ENABLE_LIGHTING_DEBUG_UI ||
     !DEVELOPER_CONFIG.ENABLE_DEBUG_MODE ||
-    !windowData
+    !windowData ||
+    !isVisible ||
+    !position
   ) {
     return null;
   }
@@ -42,19 +56,22 @@ export function LightingDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
     <div
       style={{
         position: "fixed",
-        bottom: `${DEBUG_UI_CONFIG.bottomMargin}px`,
-        left: `${DEBUG_UI_CONFIG.getPanelPosition(
-          DEBUG_UI_CONFIG.panels.LIGHTING_DEBUG.index
-        )}px`,
+        ...(position.bottom !== undefined
+          ? { bottom: `${position.bottom}px` }
+          : { top: `${position.top}px` }),
+        ...(position.right !== undefined
+          ? { right: `${position.right}px` }
+          : { left: `${position.left}px` }),
+        width: `${position.width}px`,
         background: "rgba(0, 0, 0, 0.9)",
         color: "white",
         padding: "15px",
         borderRadius: "8px",
         fontFamily: "monospace",
         fontSize: "12px",
-        minWidth: `${DEBUG_UI_CONFIG.panelWidth}px`,
         border: `2px solid ${DEBUG_UI_CONFIG.panels.LIGHTING_DEBUG.color}`,
         boxShadow: "0 4px 12px rgba(0, 0, 0, 0.5)",
+        backdropFilter: "blur(10px)",
         zIndex: 1000,
         pointerEvents: "auto",
       }}

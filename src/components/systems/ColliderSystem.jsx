@@ -71,7 +71,7 @@ function Collider({
     setDragStart({
       pointer: [event.clientX, event.clientY],
       position: [...colliderData.position],
-      scale: [...colliderData.scale],
+      size: [...(colliderData.size || [1, 1, 1])],
     });
     event.target.setPointerCapture(event.pointerId);
   };
@@ -112,27 +112,27 @@ function Collider({
 
       onUpdate(colliderData.id, { position: newPosition });
     } else if (dragMode === "scale") {
-      let newScale = [...dragStart.scale];
+      let newSize = [...(dragStart.size || [1, 1, 1])];
       const scaleDelta = deltaX * COLLIDER_CONFIG.interaction.scaleSensitivity;
 
       if (constraintAxis) {
         // Constrained scaling
         const axisIndex =
           constraintAxis === "x" ? 0 : constraintAxis === "y" ? 1 : 2;
-        newScale[axisIndex] = Math.max(
+        newSize[axisIndex] = Math.max(
           0.1,
-          dragStart.scale[axisIndex] + scaleDelta
+          (dragStart.size ? dragStart.size[axisIndex] : 1) + scaleDelta
         );
       } else {
         // Uniform scaling
         const uniformScale = Math.max(
           0.1,
-          Math.max(...dragStart.scale) + scaleDelta
+          Math.max(...(dragStart.size || [1, 1, 1])) + scaleDelta
         );
-        newScale = [uniformScale, uniformScale, uniformScale];
+        newSize = [uniformScale, uniformScale, uniformScale];
       }
 
-      onUpdate(colliderData.id, { scale: newScale });
+      onUpdate(colliderData.id, { size: newSize });
     }
   };
 
@@ -155,7 +155,16 @@ function Collider({
     event.stopPropagation();
 
     if (enableDev) {
+      // Dev mode: handle selection AND animation
       onSelect(colliderData.id);
+
+      // Also trigger animation in dev mode
+      if (colliderData.animation && window.modelAnimations) {
+        console.log(
+          `🎬 [DEV] Collider ${colliderData.id} triggering animation: ${colliderData.animation}`
+        );
+        window.modelAnimations.play(colliderData.animation);
+      }
     } else {
       // Production mode: handle link and animation
       if (colliderData.link) {
@@ -165,7 +174,7 @@ function Collider({
       // Trigger animation if specified
       if (colliderData.animation && window.modelAnimations) {
         console.log(
-          `🎬 Collider ${colliderData.id} triggering animation: ${colliderData.animation}`
+          `🎬 [PROD] Collider ${colliderData.id} triggering animation: ${colliderData.animation}`
         );
         window.modelAnimations.play(colliderData.animation);
       }
@@ -178,8 +187,8 @@ function Collider({
     setIsHovered(true);
     onHover && onHover(colliderData.id);
 
-    // Trigger hover animation if specified (only in production mode)
-    if (!enableDev && colliderData.animation && window.modelAnimations) {
+    // Trigger hover animation if specified (both dev and prod mode)
+    if (colliderData.animation && window.modelAnimations) {
       console.log(`🎬 Hover triggering animation: ${colliderData.animation}`);
       window.modelAnimations.play(colliderData.animation);
     }
@@ -190,8 +199,8 @@ function Collider({
     setIsHovered(false);
     onUnhover && onUnhover(colliderData.id);
 
-    // Stop animation on hover out if specified (only in production mode)
-    if (!enableDev && colliderData.animation && window.modelAnimations) {
+    // Stop animation on hover out if specified (both dev and prod mode)
+    if (colliderData.animation && window.modelAnimations) {
       console.log(`🛑 Hover out stopping animations`);
       window.modelAnimations.stop();
     }
@@ -224,9 +233,9 @@ function Collider({
   const getEffectiveScale = () => {
     if (isHovered && !enableDev) {
       const multiplier = 1.05; // Slight 5% scale increase on hover
-      return colliderData.scale.map((s) => s * multiplier);
+      return (colliderData.size || [1, 1, 1]).map((s) => s * multiplier);
     }
-    return colliderData.scale;
+    return colliderData.size || [1, 1, 1];
   };
 
   const visualState = getVisualState();

@@ -56,7 +56,6 @@ import {
 import { BloomSystem } from "./systems/BloomSystem";
 import {
   CameraSystem,
-  CAMERA_CONFIG,
   createInitialCamera,
   useCameraTypeSwitcher,
 } from "./systems/CameraSystem";
@@ -65,10 +64,12 @@ import { LightingSystem } from "./systems/LightingSystem";
 // Collider System Components
 import { ColliderSystem } from "./systems/ColliderSystem";
 import { UIStyleInjector } from "./ui/UIStyleInjector";
+import { UILayoutManager } from "./ui/UILayoutManager";
 import {
   DEFAULT_COLLIDERS,
   AVAILABLE_ANIMATIONS,
 } from "./systems/ColliderConfig";
+import { useColliderData } from "../hooks/useColliderData";
 
 // UI Components (renamed from External)
 import { CameraDebugUI } from "./ui/CameraDebugUI";
@@ -76,68 +77,14 @@ import { BloomDebugUI } from "./ui/BloomDebugUI";
 import { LightingDebugUI } from "./ui/LightingDebugUI";
 import { ColliderDebugUI } from "./ui/ColliderDebugUI";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// 🔧 DEVELOPER SETTINGS
-// ═══════════════════════════════════════════════════════════════════════════════
-// These settings control the development/debug features.
-// Set ENABLE_DEBUG_MODE to false before deployment to hide all debug UI.
-
-const DEVELOPER_CONFIG = {
-  // 🐛 Master switch for all debug features
-  ENABLE_DEBUG_MODE: true, // Set to false for production deployment
-
-  // 🎯 Focus point manipulation (G key + X/Y/Z axis locking)
-  ENABLE_FOCUS_CONTROL: true, // Blender-style transform system
-
-  // 📊 Real-time camera debug UI
-  ENABLE_CAMERA_DEBUG_UI: true, // Shows position, target, copy-paste values
-
-  // 🌟 Bloom effect debug controls
-  ENABLE_BLOOM_DEBUG_UI: true, // Interactive bloom controls for development
-
-  // Lighting debug controls
-  ENABLE_LIGHTING_DEBUG_UI: true, // Interactive lighting controls
-
-  // Collider system debug controls
-  ENABLE_COLLIDER_DEBUG_UI: true, // Interactive 3D colliders with management UI
-  ENABLE_COLLIDER_SYSTEM: true, // Enable collider interaction system
-
-  // �📝 Console logging for materials and setup
-  // ⚠️ IMPORTANT: Set to false for production to hide ALL console logs!
-  // Controls: material analysis, camera switching, setup logs, WebGL errors
-  ENABLE_CONSOLE_LOGS: true, // Set to true for development debugging
-};
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// 🎨 DEBUG UI LAYOUT CONFIGURATION
-// ═══════════════════════════════════════════════════════════════════════════════
-// Centralized UI panel positioning for consistent layout
-
-const DEBUG_UI_CONFIG = {
-  // 📏 Panel dimensions
-  panelWidth: 320, // Standard width for all panels
-  panelGap: 120, // Gap between panels
-  bottomMargin: 20, // Distance from bottom of screen
-  leftMargin: 20, // Distance from left edge
-
-  // 🎯 Calculate panel positions dynamically
-  getPanelPosition: (panelIndex) => {
-    const baseLeft = DEBUG_UI_CONFIG.leftMargin;
-    const panelSpacing = DEBUG_UI_CONFIG.panelWidth + DEBUG_UI_CONFIG.panelGap;
-    return baseLeft + panelIndex * panelSpacing;
-  },
-
-  // 📊 Panel registry (for future expansion)
-  panels: {
-    CAMERA_DEBUG: { index: 0, color: "#00ff00", icon: "📷" },
-    BLOOM_DEBUG: { index: 1, color: "#ff9500", icon: "🌟" },
-    LIGHTING_DEBUG: { index: 2, color: "#ffff00", icon: "💡" },
-    COLLIDER_DEBUG: { index: 3, color: "#ff00ff", icon: "🎯" },
-    // 🚀 Future panels can be added here:
-    PERFORMANCE_DEBUG: { index: 4, color: "#ff0080", icon: "⚡" },
-    MATERIAL_DEBUG: { index: 5, color: "#00ffff", icon: "🎨" },
-  },
-};
+// Import centralized configuration
+import {
+  DEVELOPER_CONFIG,
+  DEBUG_UI_CONFIG,
+  VISUAL_CONFIG,
+  PERFORMANCE_CONFIG,
+  CAMERA_CONFIG,
+} from "../config/app-config";
 
 // Extend R3F with post-processing classes
 extend({
@@ -162,115 +109,8 @@ extend({
 // ═══════════════════════════════════════════════════════════════════════════════
 // Camera configuration is now in CameraSystem.jsx
 
-// 🌟 BLOOM & LIGHTING CONFIGURATION
-const VISUAL_CONFIG = {
-  // �️ Quality Presets (change this for different performance levels)
-  qualityPreset: "high", // "low", "medium", "high", "ultra"
-
-  // �🎨 Render Quality Settings (auto-configured based on preset)
-  quality: (() => {
-    const presets = {
-      low: {
-        antialias: false,
-        multisampling: 0,
-        shadowMapSize: 512,
-        shadowType: THREE.BasicShadowMap,
-        anisotropy: 1,
-        enableSMAA: false,
-        enableFXAA: false, // Basic FXAA for low-end devices
-        enablePMNDRS: false, // Advanced PMNDRS postprocessing
-        pixelRatio: 1,
-      },
-      medium: {
-        antialias: true,
-        multisampling: 2,
-        shadowMapSize: 1024,
-        shadowType: THREE.PCFShadowMap,
-        anisotropy: 2,
-        enableSMAA: false,
-        enableFXAA: true, // FXAA for better performance
-        enablePMNDRS: false,
-        pixelRatio: 1.5, // Static for SSR
-      },
-      high: {
-        antialias: true,
-        multisampling: 4,
-        shadowMapSize: 1024,
-        shadowType: THREE.PCFSoftShadowMap,
-        anisotropy: 4,
-        enableSMAA: true, // Re-enable SMAA for testing
-        enableFXAA: false,
-        enablePMNDRS: false, // Temporarily disable for debugging
-        pixelRatio: 2, // Static for SSR
-      },
-      ultra: {
-        antialias: true,
-        multisampling: 8,
-        shadowMapSize: 2048,
-        shadowType: THREE.PCFSoftShadowMap,
-        anisotropy: 8,
-        enableSMAA: false, // Use PMNDRS instead
-        enableFXAA: false,
-        enablePMNDRS: true, // Best quality with PMNDRS
-        pixelRatio: 2, // Static for SSR
-      },
-    };
-    return presets.high; // Static return to avoid SSR issues
-  })(),
-
-  // 💫 Bloom settings for selective bloom system
-  bloom: {
-    strength: 1.5, // Strong bloom for dramatic effect
-    radius: 0.4, // Medium radius for good coverage
-    threshold: 0.1, // Low threshold for more bloom areas
-    exposure: 1.0, // Tone mapping exposure
-  },
-
-  // 🔧 Anti-aliasing controls for high quality edges
-  enableSMAA: true, // Enable SMAA for crisp edges
-  enableFXAA: false, // Disable FXAA (SMAA is better)
-
-  // 🌍 Environment and background
-  background: "#1a1a2e", // Scene background color
-  environment: "city", // HDRI environment preset
-
-  // 💡 Lighting setup
-  ambientLight: {
-    intensity: 0.3,
-    color: "#ffffff",
-  },
-  keyLight: {
-    position: [10, 10, 5],
-    intensity: 3,
-    color: "#ffffff",
-  },
-  fillLight: {
-    position: [-5, 5, -5],
-    intensity: 1,
-    color: "#87CEEB",
-  },
-  rimLight: {
-    position: [0, 5, -10],
-    intensity: 2,
-    color: "#FFA500",
-  },
-};
-
-// 🚀 DEPLOYMENT INSTRUCTIONS:
 // ═══════════════════════════════════════════════════════════════════════════════
-// When you're ready to deploy your project:
-//
-// 1. Find your perfect camera setup using the debug tools:
-//    - G key + X/Y/Z axis for focus point positioning
-//    - C key to switch between Perspective/Orthographic camera
-//    - WASD keys for camera movement, Shift+WASD for target movement
-// 2. Copy the values from the debug UI and paste them into CAMERA_CONFIG above
-// 3. Set your preferred camera type: CAMERA_CONFIG.perspective = true/false
-// 4. Tune bloom settings using the bloom debug controls (bottom-left corner)
-// 5. Set DEVELOPER_CONFIG.ENABLE_DEBUG_MODE = false to hide all debug features
-// 6. Optionally set other DEVELOPER_CONFIG flags to false for production
-//
-// This will give you a clean production build with your perfect setup!
+// 🎯 SCENE COMPONENTS
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function Loader() {
@@ -287,6 +127,57 @@ function Model({ target, onTargetChange, onAnimationsDetected }) {
 
   const [materialsProcessed, setMaterialsProcessed] = useState(false);
 
+  // Debug: Log available animations
+  useEffect(() => {
+    if (gltf.animations && gltf.animations.length > 0) {
+      console.log(
+        "🎬 Available animations:",
+        gltf.animations.map((anim) => anim.name)
+      );
+      console.log(
+        "🎮 Actions available:",
+        actions ? Object.keys(actions) : "No actions"
+      );
+      console.log(
+        "🎯 Animation details:",
+        gltf.animations.map((anim) => ({
+          name: anim.name,
+          duration: anim.duration,
+          tracks: anim.tracks.length,
+        }))
+      );
+
+      // Pass real animations to parent component
+      if (onAnimationsDetected) {
+        // Use real animation names as IDs for consistency
+        const realAnimations = gltf.animations.map((anim, index) => ({
+          id: anim.name, // Use real GLTF animation name as ID
+          name: `Animation ${index + 1} (${anim.name})`, // User-friendly name with real name
+          duration: anim.duration.toFixed(1),
+          realName: anim.name, // Store actual GLTF animation name
+        }));
+
+        // Create global mapping for animation system (real names map to themselves)
+        window.animationMapping = {};
+        gltf.animations.forEach((anim, index) => {
+          // Map real names to themselves (no transformation needed)
+          window.animationMapping[anim.name] = anim.name;
+
+          // Also support generic names for backward compatibility
+          const genericId = `anim${index + 1}`;
+          const alternativeId = `animation_${index}`; // Fix: start from 0
+          window.animationMapping[genericId] = anim.name;
+          window.animationMapping[alternativeId] = anim.name;
+        });
+
+        console.log("🔗 Animation mapping created:", window.animationMapping);
+        onAnimationsDetected(realAnimations);
+      }
+    } else {
+      console.warn("⚠️ No animations found in GLTF model");
+    }
+  }, [gltf.animations, actions, onAnimationsDetected]);
+
   // Expose animation controls globally for collider system
   useEffect(() => {
     if (actions && Object.keys(actions).length > 0) {
@@ -295,11 +186,33 @@ function Model({ target, onTargetChange, onAnimationsDetected }) {
         mixer,
         play: (animationName) => {
           console.log(`🎬 Playing animation: ${animationName}`);
+
+          // Check if it's a generic name that needs mapping
+          const realAnimationName =
+            window.animationMapping?.[animationName] || animationName;
+          console.log(`🔗 Mapped '${animationName}' to '${realAnimationName}'`);
+          console.log(`� Available actions:`, Object.keys(actions));
+
           // Stop all other animations
           Object.values(actions).forEach((action) => action.stop());
+
           // Play the requested animation
-          if (actions[animationName]) {
-            actions[animationName].reset().fadeIn(0.5).play();
+          if (actions[realAnimationName]) {
+            console.log(`✅ Found action ${realAnimationName}, starting...`);
+            const action = actions[realAnimationName];
+
+            // Configure for one-time playback
+            action.reset();
+            action.setLoop(2201, 1); // THREE.LoopOnce = 2201, repeat = 1
+            action.clampWhenFinished = true; // Stay at final frame when done
+
+            action.fadeIn(0.2).play();
+            console.log(`🎬 Action started (one-time):`, action.isRunning());
+          } else {
+            console.error(
+              `❌ Animation '${realAnimationName}' not found in actions:`,
+              Object.keys(actions)
+            );
           }
         },
         stop: () => {
@@ -310,6 +223,13 @@ function Model({ target, onTargetChange, onAnimationsDetected }) {
     }
   }, [actions, mixer]);
 
+  // Update animation mixer each frame
+  useFrame((state, delta) => {
+    if (mixer) {
+      mixer.update(delta);
+    }
+  });
+
   useEffect(() => {
     console.log("🔍 Model component mounted, gltf:", gltf);
 
@@ -317,7 +237,7 @@ function Model({ target, onTargetChange, onAnimationsDetected }) {
       console.log("✅ GLTF scene loaded successfully:", gltf.scene);
       setMaterialsProcessed(true);
 
-      if (DEVELOPER_CONFIG.ENABLE_CONSOLE_LOGS) {
+      if (DEVELOPER_CONFIG.ENABLE_DEBUG_MODE) {
         console.log("🎨 SPLINE-STYLE: Model loaded, analyzing materials...");
         console.log("═══════════════════════════════════════════════════");
       }
@@ -615,11 +535,27 @@ export default function Scene() {
     type: "PerspectiveCamera",
   });
 
-  // Collider system state
-  const [colliders, setColliders] = useState(DEFAULT_COLLIDERS);
+  // Collider system state - Load from JSON file
+  const {
+    colliders: jsonColliders,
+    loading: collidersLoading,
+    error: collidersError,
+    setColliders: setJsonColliders,
+  } = useColliderData();
+  const [colliders, setColliders] = useState([]);
   const [selectedCollider, setSelectedCollider] = useState(null);
   const [availableAnimations, setAvailableAnimations] =
     useState(AVAILABLE_ANIMATIONS);
+
+  // Update colliders when JSON data loads
+  useEffect(() => {
+    if (!collidersLoading && jsonColliders.length > 0) {
+      setColliders(jsonColliders);
+    } else if (!collidersLoading && jsonColliders.length === 0) {
+      // Fallback to default colliders if JSON is empty
+      setColliders(DEFAULT_COLLIDERS);
+    }
+  }, [jsonColliders, collidersLoading]);
 
   // Check WebGL support
   useEffect(() => {
@@ -709,45 +645,13 @@ export default function Scene() {
         <color attach="background" args={[VISUAL_CONFIG.background]} />
         <Environment preset={VISUAL_CONFIG.environment} background={false} />
         <SoftShadows />
-        {/* Optimized Lighting System - Dynamic controls */}
-        <ambientLight
-          intensity={lightingState.ambientIntensity}
-          color={VISUAL_CONFIG.ambientLight.color}
+        {/* Advanced Lighting System with Debug Controls */}
+        <LightingSystem
+          lightingState={lightingState}
+          setLightingState={setLightingState}
+          isDebugMode={DEVELOPER_CONFIG.ENABLE_DEBUG_MODE}
         />
-        {/* Key Light with configurable shadow quality */}
-        <directionalLight
-          position={VISUAL_CONFIG.keyLight.position}
-          intensity={lightingState.keyLightIntensity}
-          color={VISUAL_CONFIG.keyLight.color}
-          castShadow
-          shadow-mapSize={[
-            VISUAL_CONFIG.quality.shadowMapSize,
-            VISUAL_CONFIG.quality.shadowMapSize,
-          ]}
-          shadow-camera-near={0.1}
-          shadow-camera-far={20}
-          shadow-camera-left={-3}
-          shadow-camera-right={3}
-          shadow-camera-top={3}
-          shadow-camera-bottom={-3}
-          shadow-bias={-0.0001}
-        />
-        {/* Fill Light - no shadows for performance */}
-        <directionalLight
-          position={VISUAL_CONFIG.fillLight.position}
-          intensity={lightingState.fillLightIntensity * 0.6}
-          color={VISUAL_CONFIG.fillLight.color}
-          castShadow={false}
-        />
-        {/* Rim Light - reduced and no shadows */}
-        <pointLight
-          position={VISUAL_CONFIG.rimLight.position}
-          intensity={lightingState.rimLightIntensity * 0.5}
-          color={VISUAL_CONFIG.rimLight.color}
-          distance={10}
-          decay={2}
-          castShadow={false}
-        />{" "}
+
         <Suspense fallback={<Loader />}>
           <Model
             target={sharedTarget}
@@ -779,7 +683,7 @@ export default function Scene() {
           VISUAL_CONFIG={VISUAL_CONFIG}
         />
         {/* 🎯 DEVELOPER ONLY: Interactive Collider System */}
-        {DEVELOPER_CONFIG.ENABLE_COLLIDER_SYSTEM && (
+        {DEVELOPER_CONFIG.ENABLE_DEBUG_MODE && (
           <ColliderSystem
             colliders={colliders}
             onCollidersUpdate={setColliders}
@@ -792,28 +696,32 @@ export default function Scene() {
 
       {/* Fixed UI Components (Completely Outside Canvas) */}
       <UIStyleInjector />
-      <CameraDebugUI
-        DEVELOPER_CONFIG={DEVELOPER_CONFIG}
-        DEBUG_UI_CONFIG={DEBUG_UI_CONFIG}
-      />
-      <BloomDebugUI
-        DEVELOPER_CONFIG={DEVELOPER_CONFIG}
-        DEBUG_UI_CONFIG={DEBUG_UI_CONFIG}
-        VISUAL_CONFIG={VISUAL_CONFIG}
-      />
-      <LightingDebugUI
-        DEVELOPER_CONFIG={DEVELOPER_CONFIG}
-        DEBUG_UI_CONFIG={DEBUG_UI_CONFIG}
-      />
-      {DEVELOPER_CONFIG.ENABLE_COLLIDER_DEBUG_UI && (
-        <ColliderDebugUI
-          colliders={colliders}
-          onCollidersUpdate={setColliders}
-          selectedCollider={selectedCollider}
-          onSelectCollider={setSelectedCollider}
-          availableAnimations={availableAnimations}
-        />
-      )}
+      <UILayoutManager DEVELOPER_CONFIG={DEVELOPER_CONFIG}>
+        {DEVELOPER_CONFIG.ENABLE_DEBUG_MODE && (
+          <>
+            <CameraDebugUI
+              DEVELOPER_CONFIG={DEVELOPER_CONFIG}
+              DEBUG_UI_CONFIG={DEBUG_UI_CONFIG}
+            />
+            <BloomDebugUI
+              DEVELOPER_CONFIG={DEVELOPER_CONFIG}
+              DEBUG_UI_CONFIG={DEBUG_UI_CONFIG}
+              VISUAL_CONFIG={VISUAL_CONFIG}
+            />
+            <LightingDebugUI
+              DEVELOPER_CONFIG={DEVELOPER_CONFIG}
+              DEBUG_UI_CONFIG={DEBUG_UI_CONFIG}
+            />
+            <ColliderDebugUI
+              colliders={colliders}
+              onCollidersUpdate={setColliders}
+              selectedCollider={selectedCollider}
+              onSelectCollider={setSelectedCollider}
+              availableAnimations={availableAnimations}
+            />
+          </>
+        )}
+      </UILayoutManager>
       {/* 🚀 Future panels ready for implementation:
       <PerformanceDebugUI />
       <MaterialDebugUI />

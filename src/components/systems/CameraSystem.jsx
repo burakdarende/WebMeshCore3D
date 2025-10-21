@@ -8,6 +8,9 @@ import { useThree, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 
+// Import centralized configuration
+import { CAMERA_CONFIG } from "../../config/app-config";
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // FOCUS TARGET SYSTEM COMPONENTS
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -87,7 +90,7 @@ function FocusPointMarker({
 
   // Global keyboard handler for G/X/Y/Z keys (only active in debug mode)
   useEffect(() => {
-    if (!DEVELOPER_CONFIG.ENABLE_FOCUS_CONTROL) return;
+    if (!DEVELOPER_CONFIG.ENABLE_DEBUG_MODE) return;
 
     const handleKeyDown = (event) => {
       const key = event.key.toLowerCase();
@@ -117,7 +120,7 @@ function FocusPointMarker({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [grabMode, DEVELOPER_CONFIG.ENABLE_FOCUS_CONTROL]);
+  }, [grabMode, DEVELOPER_CONFIG.ENABLE_DEBUG_MODE]);
 
   // Notify parent about grab mode changes
   useEffect(() => {
@@ -229,49 +232,6 @@ function FocusPointMarker({
 // ═══════════════════════════════════════════════════════════════════════════════
 // CAMERA CONFIGURATION
 // ═══════════════════════════════════════════════════════════════════════════════
-
-export const CAMERA_CONFIG = {
-  // 📷 Camera position and field of view
-  position: [4.98, 3.76, 4.86], // [x, y, z] - Change this to your desired camera position
-
-  // 🎯 Focus target (where the camera looks at)
-  target: [0.46, 0.77, -0.27], // [x, y, z] - Change this to your desired focus point
-
-  // 📐 Camera projection type
-  perspective: true, // true = Perspective camera, false = Orthographic camera
-
-  // 🔍 FOV Settings for both camera types
-  fov: {
-    perspective: {
-      default: 50, // Default FOV for perspective
-      min: 10, // Minimum FOV (telephoto)
-      max: 120, // Maximum FOV (wide angle)
-    },
-    orthographic: {
-      default: 1.7, // Default zoom for orthographic
-      min: 0.1, // Minimum zoom (zoomed out)
-      max: 3.0, // Maximum zoom (zoomed in)
-    },
-  },
-
-  // 📏 Orthographic camera settings (only used when perspective = false)
-  orthographic: {
-    left: -5,
-    right: 5,
-    top: 5,
-    bottom: -5,
-    zoom: 0.8, // Lower zoom for wider view
-    frustumSize: 5, // Smaller frustum for better proportion
-  },
-
-  // 🎮 OrbitControls settings
-  minDistance: 2,
-  maxDistance: 12,
-  maxPolarAngle: Math.PI / 1.8, // Prevent camera from going below ground
-  minPolarAngle: 0, // Allow full rotation
-  enableDamping: true,
-  dampingFactor: 0.05,
-};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CAMERA CONTROLS COMPONENT
@@ -471,7 +431,7 @@ export function CameraControls({
 
       {/* Focus Point Marker - only show in debug mode with focus control enabled */}
       {DEVELOPER_CONFIG?.ENABLE_DEBUG_MODE &&
-        DEVELOPER_CONFIG?.ENABLE_FOCUS_CONTROL && (
+        DEVELOPER_CONFIG?.ENABLE_DEBUG_MODE && (
           <FocusPointMarker
             target={target}
             onTargetChange={onTargetChange}
@@ -538,7 +498,7 @@ export function CameraTypeSwitcher({ DEVELOPER_CONFIG, cameraType }) {
         0.1,
         1000
       );
-      if (DEVELOPER_CONFIG?.ENABLE_CONSOLE_LOGS) {
+      if (DEVELOPER_CONFIG?.ENABLE_DEBUG_MODE) {
         console.log("📐 Switched to PERSPECTIVE camera");
       }
     } else {
@@ -555,7 +515,7 @@ export function CameraTypeSwitcher({ DEVELOPER_CONFIG, cameraType }) {
         1000
       );
       newCamera.zoom = orthoConfig.zoom;
-      if (DEVELOPER_CONFIG?.ENABLE_CONSOLE_LOGS) {
+      if (DEVELOPER_CONFIG?.ENABLE_DEBUG_MODE) {
         console.log("� Switched to ORTHOGRAPHIC camera");
         console.log("📐 Orthographic settings:", {
           left: orthoConfig.left * aspect,
@@ -595,7 +555,7 @@ export function useCameraTypeSwitcher(DEVELOPER_CONFIG, onCameraTypeChange) {
         setCameraType((prev) => {
           const newType =
             prev === "perspective" ? "orthographic" : "perspective";
-          if (DEVELOPER_CONFIG.ENABLE_CONSOLE_LOGS) {
+          if (DEVELOPER_CONFIG.ENABLE_DEBUG_MODE) {
             console.log(`📷 Camera switched to: ${newType}`);
             console.log(`📐 Current camera type: ${prev} → ${newType}`);
           }

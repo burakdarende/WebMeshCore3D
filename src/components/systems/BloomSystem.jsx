@@ -14,29 +14,13 @@ import { SMAAPass } from "three/examples/jsm/postprocessing/SMAAPass";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader";
 
+// Import centralized bloom configuration
+import { VISUAL_CONFIG } from "../../config/app-config";
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // BLOOM CONFIGURATION
 // ═══════════════════════════════════════════════════════════════════════════════
-
-export const BLOOM_CONFIG = {
-  // Default bloom settings
-  defaults: {
-    threshold: 0.1,
-    strength: 1.5,
-    radius: 0.4,
-    exposure: 1.0,
-  },
-
-  // Quality settings
-  quality: {
-    antialias: true,
-    multisampling: 4,
-    shadowMapSize: 1024,
-    anisotropy: 4,
-    enableSMAA: true,
-    enableFXAA: false,
-  },
-};
+// Configuration now imported from centralized app-config.js
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // POST PROCESSING EFFECT COMPONENT
@@ -48,10 +32,10 @@ export function PostProcessingEffect() {
 
   // Persistent bloom parameters - don't reset when dependencies change
   const [bloomParams, setBloomParams] = useState(() => ({
-    threshold: BLOOM_CONFIG.defaults.threshold,
-    strength: BLOOM_CONFIG.defaults.strength,
-    radius: BLOOM_CONFIG.defaults.radius,
-    exposure: BLOOM_CONFIG.defaults.exposure,
+    threshold: VISUAL_CONFIG.bloom.threshold,
+    strength: VISUAL_CONFIG.bloom.strength,
+    radius: VISUAL_CONFIG.bloom.radius,
+    exposure: VISUAL_CONFIG.bloom.exposure,
   }));
 
   const bloomComposer = useRef();
@@ -155,7 +139,7 @@ export function PostProcessingEffect() {
       finalComposer.current.addPass(mixPass);
 
       // Add high-quality anti-aliasing
-      if (BLOOM_CONFIG.quality.enableSMAA) {
+      if (VISUAL_CONFIG.quality.enableSMAA) {
         const smaaPass = new SMAAPass(
           size.width * gl.getPixelRatio(),
           size.height * gl.getPixelRatio()
@@ -163,7 +147,7 @@ export function PostProcessingEffect() {
         finalComposer.current.addPass(smaaPass);
       }
 
-      if (BLOOM_CONFIG.quality.enableFXAA) {
+      if (VISUAL_CONFIG.quality.enableFXAA) {
         const fxaaPass = new ShaderPass(FXAAShader);
         fxaaPass.material.uniforms["resolution"].value.x =
           1 / (size.width * gl.getPixelRatio());
@@ -271,10 +255,10 @@ export function BloomControls({ isDebugMode }) {
   }
 
   const [bloomParams, setBloomParams] = useState({
-    threshold: BLOOM_CONFIG.defaults.threshold,
-    strength: BLOOM_CONFIG.defaults.strength,
-    radius: BLOOM_CONFIG.defaults.radius,
-    exposure: BLOOM_CONFIG.defaults.exposure,
+    threshold: VISUAL_CONFIG.bloom.threshold,
+    strength: VISUAL_CONFIG.bloom.strength,
+    radius: VISUAL_CONFIG.bloom.radius,
+    exposure: VISUAL_CONFIG.bloom.exposure || 1.0,
   });
 
   // Update global bloom controls when params change
