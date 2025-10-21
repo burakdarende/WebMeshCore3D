@@ -20,6 +20,7 @@ import {
   Environment,
   ContactShadows,
   SoftShadows,
+  useAnimations,
 } from "@react-three/drei";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { useLoader } from "@react-three/fiber";
@@ -45,6 +46,11 @@ import {
   BlendFunction,
 } from "postprocessing";
 
+// Collider System Components
+import { ColliderSystem } from "./ColliderSystem";
+import { ExternalColliderDebugUI } from "./ColliderDebugUI";
+import { DEFAULT_COLLIDERS, AVAILABLE_ANIMATIONS } from "./ColliderConfig";
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 🔧 DEVELOPER SETTINGS
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -64,8 +70,12 @@ const DEVELOPER_CONFIG = {
   // 🌟 Bloom effect debug controls
   ENABLE_BLOOM_DEBUG_UI: true, // Interactive bloom controls for development
 
-  // � Lighting debug controls
+  // Lighting debug controls
   ENABLE_LIGHTING_DEBUG_UI: true, // Interactive lighting controls
+
+  // Collider system debug controls
+  ENABLE_COLLIDER_DEBUG_UI: true, // Interactive 3D colliders with management UI
+  ENABLE_COLLIDER_SYSTEM: true, // Enable collider interaction system
 
   // �📝 Console logging for materials and setup
   // ⚠️ IMPORTANT: Set to false for production to hide ALL console logs!
@@ -96,10 +106,11 @@ const DEBUG_UI_CONFIG = {
   panels: {
     CAMERA_DEBUG: { index: 0, color: "#00ff00", icon: "📷" },
     BLOOM_DEBUG: { index: 1, color: "#ff9500", icon: "🌟" },
-    // 🚀 Future panels can be added here:
     LIGHTING_DEBUG: { index: 2, color: "#ffff00", icon: "💡" },
-    PERFORMANCE_DEBUG: { index: 3, color: "#ff0080", icon: "⚡" },
-    MATERIAL_DEBUG: { index: 4, color: "#00ffff", icon: "🎨" },
+    COLLIDER_DEBUG: { index: 3, color: "#ff00ff", icon: "🎯" },
+    // 🚀 Future panels can be added here:
+    PERFORMANCE_DEBUG: { index: 4, color: "#ff0080", icon: "⚡" },
+    MATERIAL_DEBUG: { index: 5, color: "#00ffff", icon: "🎨" },
   },
 };
 
@@ -672,17 +683,9 @@ function CameraDebugger({ target: externalTarget, onTargetChange }) {
 }
 
 // High-Quality Selective Bloom System - Based on Three.js Official Examples
-function PostProcessingEffect() {
+function PostProcessingEffect({ bloomParams }) {
   const { gl, scene, camera, size } = useThree();
   const [isEnabled, setIsEnabled] = useState(true);
-
-  // Persistent bloom parameters - don't reset when dependencies change
-  const [bloomParams, setBloomParams] = useState(() => ({
-    threshold: VISUAL_CONFIG.bloom.threshold,
-    strength: VISUAL_CONFIG.bloom.strength,
-    radius: VISUAL_CONFIG.bloom.radius,
-    exposure: VISUAL_CONFIG.bloom.exposure,
-  }));
 
   const bloomComposer = useRef();
   const finalComposer = useRef();
@@ -829,14 +832,18 @@ function PostProcessingEffect() {
   }, [gl, scene, camera, size, isEnabled, bloomParams]);
 
   // Dynamic bloom parameter updates
-  useEffect(() => {
-    if (bloomPassRef.current && gl) {
-      bloomPassRef.current.threshold = bloomParams.threshold;
-      bloomPassRef.current.strength = bloomParams.strength;
-      bloomPassRef.current.radius = bloomParams.radius;
-      gl.toneMappingExposure = Math.pow(bloomParams.exposure, 4.0);
-    }
-  }, [bloomParams, gl]);
+  // Store previous bloom params to avoid unnecessary updates
+  const prevBloomParams = useRef(null);
+  
+  // Remove the useEffect for bloom updates, we'll do it in useFrame
+  // useEffect(() => {
+  //   if (bloomPassRef.current && gl && bloomParams) {
+  //     bloomPassRef.current.threshold = bloomParams.threshold;
+  //     bloomPassRef.current.strength = bloomParams.strength;
+  //     bloomPassRef.current.radius = bloomParams.radius;
+  //     gl.toneMappingExposure = Math.pow(bloomParams.exposure, 4.0);
+  //   }
+  // }, [bloomParams, gl]);
 
   // === SELECTIVE BLOOM FUNCTIONS ===
   const darkenNonBloomed = (obj) => {
@@ -861,6 +868,26 @@ function PostProcessingEffect() {
   useFrame(() => {
     if (!isEnabled || !bloomComposer.current || !finalComposer.current) return;
 
+    // Update bloom parameters if changed (smooth, per-frame updates)
+    if (bloomPassRef.current && gl && bloomParams) {
+      const current = bloomParams;
+      const prev = prevBloomParams.current;
+      
+      if (!prev || 
+          prev.threshold !== current.threshold ||
+          prev.strength !== current.strength ||
+          prev.radius !== current.radius ||
+          prev.exposure !== current.exposure) {
+        
+        bloomPassRef.current.threshold = current.threshold;
+        bloomPassRef.current.strength = current.strength;
+        bloomPassRef.current.radius = current.radius;
+        gl.toneMappingExposure = Math.pow(current.exposure, 4.0);
+        
+        prevBloomParams.current = { ...current };
+      }
+    }
+
     try {
       // Step 1: Darken all non-bloom objects
       scene.traverse(darkenNonBloomed);
@@ -881,7 +908,7 @@ function PostProcessingEffect() {
 
   // Expose bloom controls for external access
   window.bloomControls = {
-    setParams: setBloomParams,
+    setParams: () => {}, // Will be overridden by BloomControls component
     params: bloomParams,
     isEnabled,
     setEnabled: setIsEnabled,
@@ -891,7 +918,7 @@ function PostProcessingEffect() {
 }
 
 // Interactive Bloom Controls Component - Developer Mode Only (Fixed Position)
-function BloomControls() {
+function BloomControls({ bloomParams, setBloomParams }) {
   // Early return if developer bloom controls are disabled
   if (
     !DEVELOPER_CONFIG.ENABLE_BLOOM_DEBUG_UI ||
@@ -900,17 +927,19 @@ function BloomControls() {
     return null;
   }
 
-  const [bloomParams, setBloomParams] = useState({
-    threshold: VISUAL_CONFIG.bloom.threshold,
-    strength: VISUAL_CONFIG.bloom.strength,
-    radius: VISUAL_CONFIG.bloom.radius,
-    exposure: VISUAL_CONFIG.bloom.exposure,
-  });
+  // Use props instead of local state
+  // const [bloomParams, setBloomParams] = useState({
+  //   threshold: VISUAL_CONFIG.bloom.threshold,
+  //   strength: VISUAL_CONFIG.bloom.strength,
+  //   radius: VISUAL_CONFIG.bloom.radius,
+  //   exposure: VISUAL_CONFIG.bloom.exposure,
+  // });
 
   // Update global bloom controls when params change
   useEffect(() => {
     if (window.bloomControls) {
-      window.bloomControls.setParams(bloomParams);
+      window.bloomControls.setParams = (newParams) => setBloomParams(newParams);
+      window.bloomControls.params = bloomParams;
     }
   }, [bloomParams]);
 
@@ -927,18 +956,14 @@ function BloomControls() {
 
 // External UI Components (Completely Fixed, Outside Canvas)
 function ExternalCameraDebugUI() {
-  const [cameraData, setCameraData] = useState({
-    position: { x: 0, y: 0, z: 0 },
-    target: [0, 0, 0],
-    fov: 50,
-    type: "PerspectiveCamera",
-  });
+  // Don't use local state - use window data directly
+  const [windowData, setWindowData] = useState(null);
 
   // Poll camera data from window object
   useEffect(() => {
     const interval = setInterval(() => {
       if (window.cameraDebugData) {
-        setCameraData(window.cameraDebugData);
+        setWindowData(window.cameraDebugData);
       }
     }, 100); // Update every 100ms
 
@@ -947,7 +972,8 @@ function ExternalCameraDebugUI() {
 
   if (
     !DEVELOPER_CONFIG.ENABLE_CAMERA_DEBUG_UI ||
-    !DEVELOPER_CONFIG.ENABLE_DEBUG_MODE
+    !DEVELOPER_CONFIG.ENABLE_DEBUG_MODE ||
+    !windowData
   ) {
     return null;
   }
@@ -993,19 +1019,19 @@ function ExternalCameraDebugUI() {
           color: "#ff4444",
         }}
       >
-        X: {cameraData.position.x.toFixed(2)} | Y:{" "}
-        {cameraData.position.y.toFixed(2)} | Z:{" "}
-        {cameraData.position.z.toFixed(2)}
+        X: {windowData.position.x.toFixed(2)} | Y:{" "}
+        {windowData.position.y.toFixed(2)} | Z:{" "}
+        {windowData.position.z.toFixed(2)}
       </div>
 
       <div style={{ marginBottom: "8px" }}>
-        <strong>FOV:</strong> {cameraData.fov?.toFixed(0) || "N/A"}
+        <strong>FOV:</strong> {windowData.fov?.toFixed(0) || "N/A"}
       </div>
 
       <div style={{ marginBottom: "8px" }}>
         <strong>Camera Type (Press C to toggle):</strong>{" "}
         <span style={{ color: "#ff0000" }}>
-          {cameraData.type === "PerspectiveCamera"
+          {windowData.type === "PerspectiveCamera"
             ? "Perspective"
             : "Orthographic"}
         </span>
@@ -1021,9 +1047,9 @@ function ExternalCameraDebugUI() {
           color: "#ff4444",
         }}
       >
-        X: {cameraData.target[0]?.toFixed(2)} | Y:{" "}
-        {cameraData.target[1]?.toFixed(2)} | Z:{" "}
-        {cameraData.target[2]?.toFixed(2)}
+        X: {windowData.target[0]?.toFixed(2)} | Y:{" "}
+        {windowData.target[1]?.toFixed(2)} | Z:{" "}
+        {windowData.target[2]?.toFixed(2)}
       </div>
 
       <div style={{ fontSize: "11px", color: "#888" }}>
@@ -1037,36 +1063,42 @@ function ExternalCameraDebugUI() {
 }
 
 function ExternalBloomDebugUI() {
-  // Start with default values, update from window data when available
-  const [bloomData, setBloomData] = useState(() => ({
-    bloomParams: {
-      threshold: VISUAL_CONFIG.bloom.threshold,
-      strength: VISUAL_CONFIG.bloom.strength,
-      radius: VISUAL_CONFIG.bloom.radius,
-      exposure: VISUAL_CONFIG.bloom.exposure,
-    },
-    setBloomParams: null,
-  }));
+  // Direct access to window data without polling
+  const [windowData, setWindowData] = useState(null);
 
-  // Poll bloom data from window object
+  // Update when window data changes
   useEffect(() => {
-    const interval = setInterval(() => {
+    if (window.bloomDebugData) {
+      setWindowData(window.bloomDebugData);
+    }
+    
+    // Listen for bloom updates
+    const checkForUpdates = () => {
       if (window.bloomDebugData) {
-        setBloomData(window.bloomDebugData);
+        setWindowData(prev => {
+          const current = window.bloomDebugData;
+          // Only update if actually different
+          if (!prev || JSON.stringify(prev.bloomParams) !== JSON.stringify(current.bloomParams)) {
+            return current;
+          }
+          return prev;
+        });
       }
-    }, 100); // Update every 100ms
+    };
 
+    const interval = setInterval(checkForUpdates, 50); // Faster but smarter checking
     return () => clearInterval(interval);
   }, []);
 
   if (
     !DEVELOPER_CONFIG.ENABLE_BLOOM_DEBUG_UI ||
-    !DEVELOPER_CONFIG.ENABLE_DEBUG_MODE
+    !DEVELOPER_CONFIG.ENABLE_DEBUG_MODE ||
+    !windowData
   ) {
     return null;
   }
 
-  const { bloomParams, setBloomParams } = bloomData;
+  const { bloomParams, setBloomParams } = windowData;
 
   return (
     <div
@@ -1193,21 +1225,14 @@ function ExternalBloomDebugUI() {
 // 🚀 FUTURE PANEL TEMPLATE - Ready for easy expansion
 // Copy this template and modify for new debug panels
 function ExternalLightingDebugUI() {
-  // Uncomment when implementing lighting debug
-
-  const [lightingData, setLightingData] = useState({
-    ambientIntensity: VISUAL_CONFIG.ambientLight.intensity,
-    keyLightIntensity: VISUAL_CONFIG.keyLight.intensity,
-    fillLightIntensity: VISUAL_CONFIG.fillLight.intensity,
-    rimLightIntensity: VISUAL_CONFIG.rimLight.intensity,
-    setLightingState: null,
-  });
+  // Don't use local state - use window data directly
+  const [windowData, setWindowData] = useState(null);
 
   // Poll lighting data from window object
   useEffect(() => {
     const interval = setInterval(() => {
       if (window.lightingDebugData) {
-        setLightingData(window.lightingDebugData);
+        setWindowData(window.lightingDebugData);
       }
     }, 100);
 
@@ -1216,14 +1241,15 @@ function ExternalLightingDebugUI() {
 
   if (
     !DEVELOPER_CONFIG.ENABLE_LIGHTING_DEBUG_UI ||
-    !DEVELOPER_CONFIG.ENABLE_DEBUG_MODE
+    !DEVELOPER_CONFIG.ENABLE_DEBUG_MODE ||
+    !windowData
   ) {
     return null;
   }
 
   const updateLighting = (updates) => {
-    if (lightingData.setLightingState) {
-      lightingData.setLightingState((prev) => ({
+    if (windowData.setLightingState) {
+      windowData.setLightingState((prev) => ({
         ...prev,
         ...updates,
       }));
@@ -1263,14 +1289,14 @@ function ExternalLightingDebugUI() {
 
       <div style={{ marginBottom: "15px" }}>
         <label style={{ display: "block", marginBottom: "5px" }}>
-          Ambient: {lightingData.ambientIntensity.toFixed(2)}
+          Ambient: {windowData.ambientIntensity.toFixed(2)}
         </label>
         <input
           type="range"
           min="0"
           max="2"
           step="0.1"
-          value={lightingData.ambientIntensity}
+          value={windowData.ambientIntensity}
           onChange={(e) =>
             updateLighting({ ambientIntensity: parseFloat(e.target.value) })
           }
@@ -1280,14 +1306,14 @@ function ExternalLightingDebugUI() {
 
       <div style={{ marginBottom: "15px" }}>
         <label style={{ display: "block", marginBottom: "5px" }}>
-          Key Light: {lightingData.keyLightIntensity.toFixed(2)}
+          Key Light: {windowData.keyLightIntensity.toFixed(2)}
         </label>
         <input
           type="range"
           min="0"
           max="5"
           step="0.1"
-          value={lightingData.keyLightIntensity}
+          value={windowData.keyLightIntensity}
           onChange={(e) =>
             updateLighting({ keyLightIntensity: parseFloat(e.target.value) })
           }
@@ -1297,14 +1323,14 @@ function ExternalLightingDebugUI() {
 
       <div style={{ marginBottom: "15px" }}>
         <label style={{ display: "block", marginBottom: "5px" }}>
-          Fill Light: {lightingData.fillLightIntensity.toFixed(2)}
+          Fill Light: {windowData.fillLightIntensity.toFixed(2)}
         </label>
         <input
           type="range"
           min="0"
           max="3"
           step="0.1"
-          value={lightingData.fillLightIntensity}
+          value={windowData.fillLightIntensity}
           onChange={(e) =>
             updateLighting({ fillLightIntensity: parseFloat(e.target.value) })
           }
@@ -1314,14 +1340,14 @@ function ExternalLightingDebugUI() {
 
       <div style={{ marginBottom: "15px" }}>
         <label style={{ display: "block", marginBottom: "5px" }}>
-          Rim Light: {lightingData.rimLightIntensity.toFixed(2)}
+          Rim Light: {windowData.rimLightIntensity.toFixed(2)}
         </label>
         <input
           type="range"
           min="0"
           max="4"
           step="0.1"
-          value={lightingData.rimLightIntensity}
+          value={windowData.rimLightIntensity}
           onChange={(e) =>
             updateLighting({ rimLightIntensity: parseFloat(e.target.value) })
           }
@@ -1336,11 +1362,37 @@ function ExternalLightingDebugUI() {
   );
 }
 
-function Model({ target, onTargetChange }) {
+function Model({ target, onTargetChange, onAnimationsDetected }) {
   // Simple model loading without error handling for now
   const gltf = useLoader(GLTFLoader, "/models/bdr_room_1.glb");
 
+  // Animation system
+  const { actions, mixer } = useAnimations(gltf.animations, gltf.scene);
+
   const [materialsProcessed, setMaterialsProcessed] = useState(false);
+
+  // Expose animation controls globally for collider system
+  useEffect(() => {
+    if (actions && Object.keys(actions).length > 0) {
+      window.modelAnimations = {
+        actions,
+        mixer,
+        play: (animationName) => {
+          console.log(`🎬 Playing animation: ${animationName}`);
+          // Stop all other animations
+          Object.values(actions).forEach((action) => action.stop());
+          // Play the requested animation
+          if (actions[animationName]) {
+            actions[animationName].reset().fadeIn(0.5).play();
+          }
+        },
+        stop: () => {
+          console.log(`🛑 Stopping all animations`);
+          Object.values(actions).forEach((action) => action.stop());
+        },
+      };
+    }
+  }, [actions, mixer]);
 
   useEffect(() => {
     console.log("🔍 Model component mounted, gltf:", gltf);
@@ -1373,6 +1425,25 @@ function Model({ target, onTargetChange }) {
         });
       } else if (DEVELOPER_CONFIG.ENABLE_CONSOLE_LOGS) {
         console.log("📷 No cameras found in GLTF file");
+      }
+
+      // Check for animations in the GLTF file
+      if (gltf.animations && gltf.animations.length > 0) {
+        console.log("🎬 ANIMATIONS FOUND:", gltf.animations.length);
+        const animationNames = gltf.animations.map((anim, index) => ({
+          id: `animation_${index}`,
+          name: anim.name || `Animation ${index + 1}`,
+          duration: anim.duration || 0,
+        }));
+
+        console.log("Available animations:", animationNames);
+
+        // Notify parent component about available animations
+        if (onAnimationsDetected) {
+          onAnimationsDetected(animationNames);
+        }
+      } else if (DEVELOPER_CONFIG.ENABLE_CONSOLE_LOGS) {
+        console.log("🎬 No animations found in GLTF file");
       }
 
       // Material analysis counters
@@ -1605,7 +1676,7 @@ export default function Scene() {
   const [sharedTarget, setSharedTarget] = useState(CAMERA_CONFIG.target);
   const [hasWebGL, setHasWebGL] = useState(true);
 
-  // Dynamic lighting state for real-time control
+  // Consolidated state management - all states in one place
   const [lightingState, setLightingState] = useState({
     ambientIntensity: VISUAL_CONFIG.ambientLight.intensity,
     keyLightIntensity: VISUAL_CONFIG.keyLight.intensity,
@@ -1613,13 +1684,26 @@ export default function Scene() {
     rimLightIntensity: VISUAL_CONFIG.rimLight.intensity,
   });
 
-  // Expose lighting data to window for external UI access
-  useEffect(() => {
-    window.lightingDebugData = {
-      ...lightingState,
-      setLightingState,
-    };
-  }, [lightingState]);
+  const [bloomParams, setBloomParams] = useState({
+    threshold: VISUAL_CONFIG.bloom.threshold,
+    strength: VISUAL_CONFIG.bloom.strength,
+    radius: VISUAL_CONFIG.bloom.radius,
+    exposure: VISUAL_CONFIG.bloom.exposure,
+  });
+
+  // Camera debug state
+  const [cameraData, setCameraData] = useState({
+    position: { x: 0, y: 0, z: 0 },
+    target: [0, 0, 0],
+    fov: 50,
+    type: "PerspectiveCamera",
+  });
+
+  // Collider system state
+  const [colliders, setColliders] = useState(DEFAULT_COLLIDERS);
+  const [selectedCollider, setSelectedCollider] = useState(null);
+  const [availableAnimations, setAvailableAnimations] =
+    useState(AVAILABLE_ANIMATIONS);
 
   // Check WebGL support
   useEffect(() => {
@@ -1775,7 +1859,11 @@ export default function Scene() {
           castShadow={false}
         />{" "}
         <Suspense fallback={<Loader />}>
-          <Model target={sharedTarget} onTargetChange={setSharedTarget} />
+          <Model
+            target={sharedTarget}
+            onTargetChange={setSharedTarget}
+            onAnimationsDetected={setAvailableAnimations}
+          />
         </Suspense>
         {/* 🔧 DEVELOPER ONLY: Camera Type Switcher */}
         {DEVELOPER_CONFIG.ENABLE_DEBUG_MODE && <CameraSwitcher />}
@@ -1791,15 +1879,37 @@ export default function Scene() {
         />
         <ControlledOrbitControls target={sharedTarget} />
         {/* High-Quality Selective Bloom System */}
-        <PostProcessingEffect />
+        <PostProcessingEffect bloomParams={bloomParams} />
         {/* 🌟 DEVELOPER ONLY: Interactive Bloom Controls (Fixed Position) */}
-        <BloomControls />
+        <BloomControls
+          bloomParams={bloomParams}
+          setBloomParams={setBloomParams}
+        />
+        {/* 🎯 DEVELOPER ONLY: Interactive Collider System */}
+        {DEVELOPER_CONFIG.ENABLE_COLLIDER_SYSTEM && (
+          <ColliderSystem
+            colliders={colliders}
+            onCollidersUpdate={setColliders}
+            selectedCollider={selectedCollider}
+            onSelectCollider={setSelectedCollider}
+            enableDev={DEVELOPER_CONFIG.ENABLE_DEBUG_MODE}
+          />
+        )}
       </Canvas>
 
       {/* External Fixed UI Components (Completely Outside Canvas) */}
       <ExternalCameraDebugUI />
       <ExternalBloomDebugUI />
       <ExternalLightingDebugUI />
+      {DEVELOPER_CONFIG.ENABLE_COLLIDER_DEBUG_UI && (
+        <ExternalColliderDebugUI
+          colliders={colliders}
+          onCollidersUpdate={setColliders}
+          selectedCollider={selectedCollider}
+          onSelectCollider={setSelectedCollider}
+          availableAnimations={availableAnimations}
+        />
+      )}
       {/* 🚀 Future panels ready for implementation:
       <ExternalPerformanceDebugUI />
       <ExternalMaterialDebugUI />
