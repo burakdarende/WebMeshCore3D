@@ -1,16 +1,16 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// COLLIDER DEBUG UI PANEL
+// COLLIDER DEBUG UI (Original Style)
 // ═══════════════════════════════════════════════════════════════════════════════
-// External UI panel for collider management, editing, and JSON export
+// Original external UI panel - exactly as it was before
 
 import React, { useState, useEffect } from "react";
 import {
   COLLIDER_CONFIG,
   ColliderUtils,
   AVAILABLE_ANIMATIONS,
-} from "./ColliderConfig";
+} from "../systems/ColliderConfig";
 
-export function ExternalColliderDebugUI({
+export function ColliderDebugUI({
   colliders,
   onCollidersUpdate,
   selectedCollider,
@@ -552,4 +552,4 @@ export function ExternalColliderDebugUI({
   );
 }
 
-export default ExternalColliderDebugUI;
+export default ColliderDebugUI;

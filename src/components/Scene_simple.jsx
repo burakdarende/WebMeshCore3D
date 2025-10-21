@@ -11,7 +11,13 @@
 // This will give you a clean production build with zero debug output!
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { Suspense, useEffect, useState, useRef } from "react";
+import React, {
+  Suspense,
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+} from "react";
 import { Canvas, extend, useFrame, useThree } from "@react-three/fiber";
 import {
   OrbitControls,
@@ -46,10 +52,29 @@ import {
   BlendFunction,
 } from "postprocessing";
 
+// System Components
+import { BloomSystem } from "./systems/BloomSystem";
+import {
+  CameraSystem,
+  CAMERA_CONFIG,
+  createInitialCamera,
+  useCameraTypeSwitcher,
+} from "./systems/CameraSystem";
+import { LightingSystem } from "./systems/LightingSystem";
+
 // Collider System Components
-import { ColliderSystem } from "./ColliderSystem";
-import { ExternalColliderDebugUI } from "./ColliderDebugUI";
-import { DEFAULT_COLLIDERS, AVAILABLE_ANIMATIONS } from "./ColliderConfig";
+import { ColliderSystem } from "./systems/ColliderSystem";
+import { UIStyleInjector } from "./ui/UIStyleInjector";
+import {
+  DEFAULT_COLLIDERS,
+  AVAILABLE_ANIMATIONS,
+} from "./systems/ColliderConfig";
+
+// UI Components (renamed from External)
+import { CameraDebugUI } from "./ui/CameraDebugUI";
+import { BloomDebugUI } from "./ui/BloomDebugUI";
+import { LightingDebugUI } from "./ui/LightingDebugUI";
+import { ColliderDebugUI } from "./ui/ColliderDebugUI";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 🔧 DEVELOPER SETTINGS
@@ -135,36 +160,7 @@ extend({
 // ═══════════════════════════════════════════════════════════════════════════════
 // 🎯 CAMERA & SCENE CONFIGURATION
 // ═══════════════════════════════════════════════════════════════════════════════
-// Configure your perfect camera setup here. Use the debug system below to find
-// your ideal values, then paste them here for permanent use.
-
-const CAMERA_CONFIG = {
-  // 📷 Camera position and field of view
-  position: [4.98, 3.76, 4.86], // [x, y, z] - Change this to your desired camera position
-  fov: 50, // Field of view - typically 30-75
-
-  // 🎯 Focus target (where the camera looks at)
-  target: [0.46, 0.77, -0.27], // [x, y, z] - Change this to your desired focus point
-
-  // 📐 Camera projection type
-  perspective: true, // true = Perspective camera, false = Orthographic camera
-
-  // 📏 Orthographic camera settings (only used when perspective = false)
-  orthographic: {
-    left: -10,
-    right: 10,
-    top: 10,
-    bottom: -10,
-    zoom: 2.0, // Increased zoom for closer view
-  },
-
-  // 🎮 OrbitControls settings
-  minDistance: 2,
-  maxDistance: 12,
-  maxPolarAngle: Math.PI / 1.8, // Prevent camera from going below ground
-  enableDamping: true,
-  dampingFactor: 0.05,
-};
+// Camera configuration is now in CameraSystem.jsx
 
 // 🌟 BLOOM & LIGHTING CONFIGURATION
 const VISUAL_CONFIG = {
@@ -280,1086 +276,6 @@ const VISUAL_CONFIG = {
 function Loader() {
   const { progress } = useProgress();
   return <Html center>{progress.toFixed(0)} % yükleniyor</Html>;
-}
-
-// Axis Line Helper - Shows constraint axis during transform
-function AxisLine({ axis, position, visible }) {
-  if (!visible) return null;
-
-  const getLineProps = () => {
-    const length = 20; // Very long line
-    switch (axis) {
-      case "x":
-        return {
-          points: [
-            [-length, position[1], position[2]],
-            [length, position[1], position[2]],
-          ],
-          color: "#ff0000", // Red for X
-        };
-      case "y":
-        return {
-          points: [
-            [position[0], -length, position[2]],
-            [position[0], length, position[2]],
-          ],
-          color: "#00ff00", // Green for Y
-        };
-      case "z":
-        return {
-          points: [
-            [position[0], position[1], -length],
-            [position[0], position[1], length],
-          ],
-          color: "#0000ff", // Blue for Z
-        };
-      default:
-        return { points: [], color: "#ffffff" };
-    }
-  };
-
-  const { points, color } = getLineProps();
-
-  return (
-    <line>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={2}
-          array={new Float32Array(points.flat())}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <lineBasicMaterial color={color} linewidth={3} />
-    </line>
-  );
-}
-
-// Focus Point Marker - 3D red dot with Blender-style transform system (G + X/Y/Z)
-function FocusPointMarker({ target, onTargetChange }) {
-  const meshRef = useRef();
-  const [isDragging, setIsDragging] = useState(false);
-  const [grabMode, setGrabMode] = useState(false);
-  const [constraintAxis, setConstraintAxis] = useState(null); // 'x', 'y', 'z', or null
-  const [dragStartPosition, setDragStartPosition] = useState(null);
-  const [dragStartTarget, setDragStartTarget] = useState(null);
-
-  useEffect(() => {
-    if (meshRef.current) {
-      meshRef.current.position.set(target[0], target[1], target[2]);
-    }
-  }, [target]);
-
-  // Global keyboard handler for G/X/Y/Z keys (only active in debug mode)
-  useEffect(() => {
-    if (!DEVELOPER_CONFIG.ENABLE_FOCUS_CONTROL) return;
-
-    const handleKeyDown = (event) => {
-      const key = event.key.toLowerCase();
-
-      if (key === "g") {
-        event.preventDefault();
-        if (grabMode) {
-          // Exit grab mode
-          setGrabMode(false);
-          setConstraintAxis(null);
-          setIsDragging(false);
-        } else {
-          // Enter grab mode
-          setGrabMode(true);
-          setConstraintAxis(null);
-        }
-      } else if (grabMode && ["x", "y", "z"].includes(key)) {
-        event.preventDefault();
-        setConstraintAxis(key);
-      } else if (key === "escape") {
-        // Cancel grab mode
-        setGrabMode(false);
-        setConstraintAxis(null);
-        setIsDragging(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [grabMode]);
-
-  const handlePointerDown = (event) => {
-    if (!grabMode) return;
-
-    event.stopPropagation();
-    setIsDragging(true);
-    setDragStartPosition([event.clientX, event.clientY]);
-    setDragStartTarget([...target]);
-    event.target.setPointerCapture(event.pointerId);
-  };
-
-  const handlePointerMove = (event) => {
-    if (!isDragging || !grabMode || !dragStartPosition) return;
-
-    event.stopPropagation();
-
-    const deltaX = (event.clientX - dragStartPosition[0]) * 0.01;
-    const deltaY = -(event.clientY - dragStartPosition[1]) * 0.01; // Invert Y
-
-    let newTarget = [...dragStartTarget];
-
-    if (constraintAxis) {
-      // Constrained movement
-      switch (constraintAxis) {
-        case "x":
-          newTarget[0] = dragStartTarget[0] + deltaX;
-          break;
-        case "y":
-          newTarget[1] = dragStartTarget[1] + deltaY;
-          break;
-        case "z":
-          newTarget[2] = dragStartTarget[2] + deltaX; // Use deltaX for Z movement
-          break;
-      }
-    } else {
-      // Free movement (screen space)
-      newTarget[0] = dragStartTarget[0] + deltaX;
-      newTarget[1] = dragStartTarget[1] + deltaY;
-    }
-
-    if (onTargetChange) {
-      onTargetChange(newTarget);
-    }
-  };
-
-  const handlePointerUp = (event) => {
-    event.stopPropagation();
-    setIsDragging(false);
-    setDragStartPosition(null);
-    setDragStartTarget(null);
-    if (event.target.releasePointerCapture) {
-      event.target.releasePointerCapture(event.pointerId);
-    }
-  };
-
-  // Visual state based on grab mode and constraint
-  const getVisualState = () => {
-    if (isDragging) {
-      return { size: 0.08, color: "#ffff00", opacity: 1.0 }; // Yellow when dragging
-    } else if (grabMode) {
-      if (constraintAxis) {
-        const colors = { x: "#ff6666", y: "#66ff66", z: "#6666ff" };
-        return { size: 0.07, color: colors[constraintAxis], opacity: 0.9 };
-      }
-      return { size: 0.06, color: "#ff8800", opacity: 0.9 }; // Orange in grab mode
-    } else {
-      return { size: 0.05, color: "#ff0000", opacity: 0.8 }; // Normal red
-    }
-  };
-
-  const visualState = getVisualState();
-
-  return (
-    <>
-      <mesh
-        ref={meshRef}
-        renderOrder={999}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
-      >
-        <sphereGeometry args={[visualState.size, 16, 16]} />
-        <meshBasicMaterial
-          color={visualState.color}
-          transparent={true}
-          opacity={visualState.opacity}
-          depthTest={false}
-        />
-      </mesh>
-
-      {/* Show axis line when in constrained mode */}
-      <AxisLine
-        axis={constraintAxis}
-        position={target}
-        visible={grabMode && constraintAxis && !isDragging}
-      />
-    </>
-  );
-}
-
-// Controlled OrbitControls that can be disabled during grab mode
-function ControlledOrbitControls({ target }) {
-  const [isGrabMode, setIsGrabMode] = useState(false);
-
-  // Track G key state globally for grab mode (only active in debug mode)
-  useEffect(() => {
-    if (!DEVELOPER_CONFIG.ENABLE_FOCUS_CONTROL) return;
-
-    const handleKeyDown = (event) => {
-      if (event.key.toLowerCase() === "g") {
-        setIsGrabMode((prev) => !prev); // Toggle grab mode
-      } else if (event.key === "Escape") {
-        setIsGrabMode(false); // Cancel grab mode
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
-
-  return (
-    <OrbitControls
-      enabled={DEVELOPER_CONFIG.ENABLE_FOCUS_CONTROL ? !isGrabMode : true} // Disable when in grab mode if debug enabled
-      enableDamping={CAMERA_CONFIG.enableDamping}
-      dampingFactor={CAMERA_CONFIG.dampingFactor}
-      minDistance={CAMERA_CONFIG.minDistance}
-      maxDistance={CAMERA_CONFIG.maxDistance}
-      maxPolarAngle={CAMERA_CONFIG.maxPolarAngle}
-      target={target} // Use dynamic target directly
-    />
-  );
-}
-
-// Camera Type Switcher - Handles perspective/orthographic switching with C key
-function CameraSwitcher() {
-  const { camera, set } = useThree();
-  const [isPerspective, setIsPerspective] = useState(CAMERA_CONFIG.perspective);
-
-  // C key handler for camera type switching (only active in debug mode)
-  useEffect(() => {
-    if (!DEVELOPER_CONFIG.ENABLE_DEBUG_MODE) return;
-
-    const handleKeyDown = (event) => {
-      if (event.key.toLowerCase() === "c") {
-        event.preventDefault();
-        setIsPerspective((prev) => !prev);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
-
-  // Switch camera type when isPerspective changes
-  useEffect(() => {
-    const currentPosition = camera.position.clone();
-    const currentRotation = camera.rotation.clone();
-
-    let newCamera;
-
-    if (isPerspective) {
-      // Switch to Perspective Camera
-      newCamera = new THREE.PerspectiveCamera(
-        CAMERA_CONFIG.fov,
-        window.innerWidth / window.innerHeight,
-        0.1,
-        1000
-      );
-      if (DEVELOPER_CONFIG.ENABLE_CONSOLE_LOGS) {
-        console.log("📐 Switched to PERSPECTIVE camera");
-      }
-    } else {
-      // Switch to Orthographic Camera
-      const aspect = window.innerWidth / window.innerHeight;
-      const frustumSize = 15; // Reduced for better proportion with higher zoom
-      newCamera = new THREE.OrthographicCamera(
-        (frustumSize * aspect) / -2,
-        (frustumSize * aspect) / 2,
-        frustumSize / 2,
-        frustumSize / -2,
-        0.1,
-        1000
-      );
-      newCamera.zoom = CAMERA_CONFIG.orthographic.zoom; // Use direct zoom value
-      if (DEVELOPER_CONFIG.ENABLE_CONSOLE_LOGS) {
-        console.log("📐 Switched to ORTHOGRAPHIC camera");
-      }
-    }
-
-    // Preserve position and rotation
-    newCamera.position.copy(currentPosition);
-    newCamera.rotation.copy(currentRotation);
-    newCamera.updateProjectionMatrix();
-
-    // Update Three.js camera
-    set({ camera: newCamera });
-  }, [isPerspective, set]);
-
-  return null; // This component doesn't render anything
-}
-
-// Real-time camera position debugger with focus control
-function CameraDebugger({ target: externalTarget, onTargetChange }) {
-  const { camera } = useThree();
-  const [position, setPosition] = React.useState({ x: 0, y: 0, z: 0 });
-  // Use external target if provided, otherwise use internal state
-  const [internalTarget, setInternalTarget] = React.useState([0, 0.5, 0]);
-  const target = externalTarget || internalTarget;
-  const setTarget = onTargetChange || setInternalTarget;
-
-  // Keyboard controls for camera and target fine-tuning
-  React.useEffect(() => {
-    const handleKeyPress = (event) => {
-      const step = 0.1;
-
-      // Check for modifier keys
-      const isShiftPressed = event.shiftKey;
-
-      switch (event.key.toLowerCase()) {
-        // Camera position controls (default)
-        case "w":
-          if (isShiftPressed) {
-            setTarget((prev) => [prev[0], prev[1], prev[2] - step]);
-          } else {
-            camera.position.z -= step;
-          }
-          break;
-        case "s":
-          if (isShiftPressed) {
-            setTarget((prev) => [prev[0], prev[1], prev[2] + step]);
-          } else {
-            camera.position.z += step;
-          }
-          break;
-        case "a":
-          if (isShiftPressed) {
-            setTarget((prev) => [prev[0] - step, prev[1], prev[2]]);
-          } else {
-            camera.position.x -= step;
-          }
-          break;
-        case "d":
-          if (isShiftPressed) {
-            setTarget((prev) => [prev[0] + step, prev[1], prev[2]]);
-          } else {
-            camera.position.x += step;
-          }
-          break;
-        case "q":
-          if (isShiftPressed) {
-            setTarget((prev) => [prev[0], prev[1] + step, prev[2]]);
-          } else {
-            camera.position.y += step;
-          }
-          break;
-        case "e":
-          if (isShiftPressed) {
-            setTarget((prev) => [prev[0], prev[1] - step, prev[2]]);
-          } else {
-            camera.position.y -= step;
-          }
-          break;
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyPress);
-    return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [camera, target]);
-
-  useFrame(() => {
-    // Update position state for UI
-    setPosition({
-      x: camera.position.x,
-      y: camera.position.y,
-      z: camera.position.z,
-    });
-  });
-
-  // Store camera data in window for external UI access
-  React.useEffect(() => {
-    window.cameraDebugData = {
-      position,
-      target,
-      fov: camera.fov,
-      type: camera.type,
-    };
-  }, [position, target, camera]);
-
-  return (
-    <>
-      <FocusPointMarker target={target} onTargetChange={setTarget} />
-    </>
-  );
-}
-
-// High-Quality Selective Bloom System - Based on Three.js Official Examples
-function PostProcessingEffect({ bloomParams }) {
-  const { gl, scene, camera, size } = useThree();
-  const [isEnabled, setIsEnabled] = useState(true);
-
-  const bloomComposer = useRef();
-  const finalComposer = useRef();
-  const bloomLayer = useRef();
-  const materials = useRef({});
-  const darkMaterial = useRef();
-  const bloomPassRef = useRef();
-
-  // Bloom scene layer for selective bloom
-  const BLOOM_SCENE = 1;
-  useEffect(() => {
-    if (!isEnabled || !gl || !scene || !camera) return;
-
-    try {
-      console.log("🌟 Initializing Selective Bloom System...");
-
-      // Initialize bloom layer and dark material for selective rendering
-      bloomLayer.current = new THREE.Layers();
-      bloomLayer.current.set(BLOOM_SCENE);
-      darkMaterial.current = new THREE.MeshBasicMaterial({ color: 0x000000 });
-
-      // Enhanced renderer setup for maximum quality
-      gl.toneMapping = THREE.ACESFilmicToneMapping;
-      gl.toneMappingExposure = Math.pow(bloomParams.exposure, 4.0);
-      gl.outputColorSpace = THREE.SRGBColorSpace;
-
-      // High-quality render targets
-      const renderTarget = new THREE.WebGLRenderTarget(
-        size.width,
-        size.height,
-        {
-          type: THREE.HalfFloatType,
-          samples: 4, // MSAA anti-aliasing
-          generateMipmaps: false,
-        }
-      );
-
-      const bloomRenderTarget = new THREE.WebGLRenderTarget(
-        size.width,
-        size.height,
-        {
-          type: THREE.HalfFloatType,
-          generateMipmaps: false,
-        }
-      );
-
-      // Base scene render pass
-      const renderPass = new RenderPass(scene, camera);
-
-      // === BLOOM COMPOSER SETUP ===
-      bloomComposer.current = new EffectComposer(gl, bloomRenderTarget);
-      bloomComposer.current.renderToScreen = false;
-      bloomComposer.current.addPass(renderPass);
-
-      // High-quality UnrealBloomPass with optimal settings
-      const bloomPass = new UnrealBloomPass(
-        new THREE.Vector2(size.width, size.height),
-        bloomParams.strength, // Dynamic strength
-        bloomParams.radius, // Dynamic radius
-        bloomParams.threshold // Dynamic threshold
-      );
-      bloomPassRef.current = bloomPass; // Store reference for dynamic updates
-      bloomComposer.current.addPass(bloomPass);
-
-      // === SHADER PASS FOR MIXING ===
-      const mixPass = new ShaderPass(
-        new THREE.ShaderMaterial({
-          uniforms: {
-            baseTexture: { value: null },
-            bloomTexture: {
-              value: bloomComposer.current.renderTarget2.texture,
-            },
-          },
-          vertexShader: `
-            varying vec2 vUv;
-            void main() {
-              vUv = uv;
-              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-          `,
-          fragmentShader: `
-            uniform sampler2D baseTexture;
-            uniform sampler2D bloomTexture;
-            varying vec2 vUv;
-            void main() {
-              vec4 base = texture2D(baseTexture, vUv);
-              vec4 bloom = texture2D(bloomTexture, vUv);
-              // Additive blending for bloom effect
-              gl_FragColor = base + vec4(1.0) * bloom;
-            }
-          `,
-        }),
-        "baseTexture"
-      );
-      mixPass.needsSwap = true;
-
-      // === FINAL COMPOSER SETUP ===
-      finalComposer.current = new EffectComposer(gl, renderTarget);
-      finalComposer.current.addPass(renderPass);
-      finalComposer.current.addPass(mixPass);
-
-      // Add high-quality anti-aliasing
-      if (VISUAL_CONFIG.enableSMAA) {
-        const smaaPass = new SMAAPass(
-          size.width * gl.getPixelRatio(),
-          size.height * gl.getPixelRatio()
-        );
-        finalComposer.current.addPass(smaaPass);
-      }
-
-      if (VISUAL_CONFIG.enableFXAA) {
-        const fxaaPass = new ShaderPass(FXAAShader);
-        fxaaPass.material.uniforms["resolution"].value.x =
-          1 / (size.width * gl.getPixelRatio());
-        fxaaPass.material.uniforms["resolution"].value.y =
-          1 / (size.height * gl.getPixelRatio());
-        finalComposer.current.addPass(fxaaPass);
-      }
-
-      // Final output pass
-      const outputPass = new OutputPass();
-      finalComposer.current.addPass(outputPass);
-
-      console.log("✅ Selective Bloom System initialized successfully");
-
-      // Resize handler
-      const handleResize = () => {
-        if (bloomComposer.current && finalComposer.current) {
-          bloomComposer.current.setSize(size.width, size.height);
-          finalComposer.current.setSize(size.width, size.height);
-        }
-      };
-      window.addEventListener("resize", handleResize);
-
-      return () => {
-        window.removeEventListener("resize", handleResize);
-        if (bloomComposer.current) bloomComposer.current.dispose();
-        if (finalComposer.current) finalComposer.current.dispose();
-      };
-    } catch (error) {
-      console.error("❌ Selective Bloom System error:", error);
-      setIsEnabled(false);
-    }
-  }, [gl, scene, camera, size, isEnabled, bloomParams]);
-
-  // Dynamic bloom parameter updates
-  // Store previous bloom params to avoid unnecessary updates
-  const prevBloomParams = useRef(null);
-  
-  // Remove the useEffect for bloom updates, we'll do it in useFrame
-  // useEffect(() => {
-  //   if (bloomPassRef.current && gl && bloomParams) {
-  //     bloomPassRef.current.threshold = bloomParams.threshold;
-  //     bloomPassRef.current.strength = bloomParams.strength;
-  //     bloomPassRef.current.radius = bloomParams.radius;
-  //     gl.toneMappingExposure = Math.pow(bloomParams.exposure, 4.0);
-  //   }
-  // }, [bloomParams, gl]);
-
-  // === SELECTIVE BLOOM FUNCTIONS ===
-  const darkenNonBloomed = (obj) => {
-    if (
-      obj.isMesh &&
-      bloomLayer.current &&
-      bloomLayer.current.test(obj.layers) === false
-    ) {
-      materials.current[obj.uuid] = obj.material;
-      obj.material = darkMaterial.current;
-    }
-  };
-
-  const restoreMaterial = (obj) => {
-    if (materials.current[obj.uuid]) {
-      obj.material = materials.current[obj.uuid];
-      delete materials.current[obj.uuid];
-    }
-  };
-
-  // === RENDER LOOP ===
-  useFrame(() => {
-    if (!isEnabled || !bloomComposer.current || !finalComposer.current) return;
-
-    // Update bloom parameters if changed (smooth, per-frame updates)
-    if (bloomPassRef.current && gl && bloomParams) {
-      const current = bloomParams;
-      const prev = prevBloomParams.current;
-      
-      if (!prev || 
-          prev.threshold !== current.threshold ||
-          prev.strength !== current.strength ||
-          prev.radius !== current.radius ||
-          prev.exposure !== current.exposure) {
-        
-        bloomPassRef.current.threshold = current.threshold;
-        bloomPassRef.current.strength = current.strength;
-        bloomPassRef.current.radius = current.radius;
-        gl.toneMappingExposure = Math.pow(current.exposure, 4.0);
-        
-        prevBloomParams.current = { ...current };
-      }
-    }
-
-    try {
-      // Step 1: Darken all non-bloom objects
-      scene.traverse(darkenNonBloomed);
-
-      // Step 2: Render bloom objects only
-      bloomComposer.current.render();
-
-      // Step 3: Restore original materials
-      scene.traverse(restoreMaterial);
-
-      // Step 4: Render final composite (base + bloom)
-      finalComposer.current.render();
-    } catch (error) {
-      console.error("❌ Selective bloom render error:", error);
-      setIsEnabled(false);
-    }
-  }, 1);
-
-  // Expose bloom controls for external access
-  window.bloomControls = {
-    setParams: () => {}, // Will be overridden by BloomControls component
-    params: bloomParams,
-    isEnabled,
-    setEnabled: setIsEnabled,
-  };
-
-  return null;
-}
-
-// Interactive Bloom Controls Component - Developer Mode Only (Fixed Position)
-function BloomControls({ bloomParams, setBloomParams }) {
-  // Early return if developer bloom controls are disabled
-  if (
-    !DEVELOPER_CONFIG.ENABLE_BLOOM_DEBUG_UI ||
-    !DEVELOPER_CONFIG.ENABLE_DEBUG_MODE
-  ) {
-    return null;
-  }
-
-  // Use props instead of local state
-  // const [bloomParams, setBloomParams] = useState({
-  //   threshold: VISUAL_CONFIG.bloom.threshold,
-  //   strength: VISUAL_CONFIG.bloom.strength,
-  //   radius: VISUAL_CONFIG.bloom.radius,
-  //   exposure: VISUAL_CONFIG.bloom.exposure,
-  // });
-
-  // Update global bloom controls when params change
-  useEffect(() => {
-    if (window.bloomControls) {
-      window.bloomControls.setParams = (newParams) => setBloomParams(newParams);
-      window.bloomControls.params = bloomParams;
-    }
-  }, [bloomParams]);
-
-  // Store bloom data in window for external UI access
-  useEffect(() => {
-    window.bloomDebugData = {
-      bloomParams,
-      setBloomParams,
-    };
-  }, [bloomParams]);
-
-  return null; // Don't render UI here, will be handled externally
-}
-
-// External UI Components (Completely Fixed, Outside Canvas)
-function ExternalCameraDebugUI() {
-  // Don't use local state - use window data directly
-  const [windowData, setWindowData] = useState(null);
-
-  // Poll camera data from window object
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (window.cameraDebugData) {
-        setWindowData(window.cameraDebugData);
-      }
-    }, 100); // Update every 100ms
-
-    return () => clearInterval(interval);
-  }, []);
-
-  if (
-    !DEVELOPER_CONFIG.ENABLE_CAMERA_DEBUG_UI ||
-    !DEVELOPER_CONFIG.ENABLE_DEBUG_MODE ||
-    !windowData
-  ) {
-    return null;
-  }
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        bottom: `${DEBUG_UI_CONFIG.bottomMargin}px`,
-        left: `${DEBUG_UI_CONFIG.getPanelPosition(
-          DEBUG_UI_CONFIG.panels.CAMERA_DEBUG.index
-        )}px`,
-        background: "rgba(0, 0, 0, 0.9)",
-        color: "white",
-        padding: "15px",
-        borderRadius: "8px",
-        fontFamily: "monospace",
-        fontSize: "12px",
-        minWidth: `${DEBUG_UI_CONFIG.panelWidth}px`,
-        border: `2px solid ${DEBUG_UI_CONFIG.panels.CAMERA_DEBUG.color}`,
-        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.5)",
-        zIndex: 1000,
-        pointerEvents: "auto",
-      }}
-    >
-      <div
-        style={{
-          marginBottom: "10px",
-          color: `${DEBUG_UI_CONFIG.panels.CAMERA_DEBUG.color}`,
-          fontWeight: "bold",
-        }}
-      >
-        {DEBUG_UI_CONFIG.panels.CAMERA_DEBUG.icon} Camera Debug
-      </div>
-
-      <div style={{ marginBottom: "8px" }}>
-        <strong>Position:</strong>
-      </div>
-      <div
-        style={{
-          marginLeft: "10px",
-          marginBottom: "5px",
-          color: "#ff4444",
-        }}
-      >
-        X: {windowData.position.x.toFixed(2)} | Y:{" "}
-        {windowData.position.y.toFixed(2)} | Z:{" "}
-        {windowData.position.z.toFixed(2)}
-      </div>
-
-      <div style={{ marginBottom: "8px" }}>
-        <strong>FOV:</strong> {windowData.fov?.toFixed(0) || "N/A"}
-      </div>
-
-      <div style={{ marginBottom: "8px" }}>
-        <strong>Camera Type (Press C to toggle):</strong>{" "}
-        <span style={{ color: "#ff0000" }}>
-          {windowData.type === "PerspectiveCamera"
-            ? "Perspective"
-            : "Orthographic"}
-        </span>
-      </div>
-
-      <div style={{ marginBottom: "8px" }}>
-        <strong>Focus Target:</strong>
-      </div>
-      <div
-        style={{
-          marginLeft: "10px",
-          marginBottom: "5px",
-          color: "#ff4444",
-        }}
-      >
-        X: {windowData.target[0]?.toFixed(2)} | Y:{" "}
-        {windowData.target[1]?.toFixed(2)} | Z:{" "}
-        {windowData.target[2]?.toFixed(2)}
-      </div>
-
-      <div style={{ fontSize: "11px", color: "#888" }}>
-        🎮 WASD - EQ: CAMERA Position | Shift+WASD - EQ: TARGET Position
-      </div>
-      <div style={{ fontSize: "11px", color: "#888", marginTop: "3px" }}>
-        🎯 G: grab mode | X/Y/Z: axis lock | C: camera type | ESC: cancel
-      </div>
-    </div>
-  );
-}
-
-function ExternalBloomDebugUI() {
-  // Direct access to window data without polling
-  const [windowData, setWindowData] = useState(null);
-
-  // Update when window data changes
-  useEffect(() => {
-    if (window.bloomDebugData) {
-      setWindowData(window.bloomDebugData);
-    }
-    
-    // Listen for bloom updates
-    const checkForUpdates = () => {
-      if (window.bloomDebugData) {
-        setWindowData(prev => {
-          const current = window.bloomDebugData;
-          // Only update if actually different
-          if (!prev || JSON.stringify(prev.bloomParams) !== JSON.stringify(current.bloomParams)) {
-            return current;
-          }
-          return prev;
-        });
-      }
-    };
-
-    const interval = setInterval(checkForUpdates, 50); // Faster but smarter checking
-    return () => clearInterval(interval);
-  }, []);
-
-  if (
-    !DEVELOPER_CONFIG.ENABLE_BLOOM_DEBUG_UI ||
-    !DEVELOPER_CONFIG.ENABLE_DEBUG_MODE ||
-    !windowData
-  ) {
-    return null;
-  }
-
-  const { bloomParams, setBloomParams } = windowData;
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        bottom: `${DEBUG_UI_CONFIG.bottomMargin}px`,
-        left: `${DEBUG_UI_CONFIG.getPanelPosition(
-          DEBUG_UI_CONFIG.panels.BLOOM_DEBUG.index
-        )}px`,
-        background: "rgba(0, 0, 0, 0.9)",
-        color: "white",
-        padding: "15px",
-        borderRadius: "8px",
-        fontFamily: "monospace",
-        fontSize: "12px",
-        minWidth: `${DEBUG_UI_CONFIG.panelWidth}px`,
-        border: `2px solid ${DEBUG_UI_CONFIG.panels.BLOOM_DEBUG.color}`,
-        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.5)",
-        zIndex: 1000,
-        pointerEvents: "auto",
-      }}
-    >
-      <div
-        style={{
-          color: `${DEBUG_UI_CONFIG.panels.BLOOM_DEBUG.color}`,
-          fontWeight: "bold",
-          marginBottom: "15px",
-        }}
-      >
-        {DEBUG_UI_CONFIG.panels.BLOOM_DEBUG.icon} BLOOM DEBUG
-      </div>
-
-      <div style={{ marginBottom: "15px" }}>
-        <label style={{ display: "block", marginBottom: "5px" }}>
-          Threshold: {bloomParams.threshold.toFixed(2)}
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value={bloomParams.threshold}
-          onChange={(e) =>
-            setBloomParams &&
-            setBloomParams((prev) => ({
-              ...prev,
-              threshold: parseFloat(e.target.value),
-            }))
-          }
-          style={{ width: "100%" }}
-        />
-      </div>
-
-      <div style={{ marginBottom: "15px" }}>
-        <label style={{ display: "block", marginBottom: "5px" }}>
-          Strength: {bloomParams.strength.toFixed(2)}
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="3"
-          step="0.1"
-          value={bloomParams.strength}
-          onChange={(e) =>
-            setBloomParams &&
-            setBloomParams((prev) => ({
-              ...prev,
-              strength: parseFloat(e.target.value),
-            }))
-          }
-          style={{ width: "100%" }}
-        />
-      </div>
-
-      <div style={{ marginBottom: "15px" }}>
-        <label style={{ display: "block", marginBottom: "5px" }}>
-          Radius: {bloomParams.radius.toFixed(2)}
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value={bloomParams.radius}
-          onChange={(e) =>
-            setBloomParams &&
-            setBloomParams((prev) => ({
-              ...prev,
-              radius: parseFloat(e.target.value),
-            }))
-          }
-          style={{ width: "100%" }}
-        />
-      </div>
-
-      <div style={{ marginBottom: "15px" }}>
-        <label style={{ display: "block", marginBottom: "5px" }}>
-          Exposure: {bloomParams.exposure.toFixed(2)}
-        </label>
-        <input
-          type="range"
-          min="0.1"
-          max="2"
-          step="0.1"
-          value={bloomParams.exposure}
-          onChange={(e) =>
-            setBloomParams &&
-            setBloomParams((prev) => ({
-              ...prev,
-              exposure: parseFloat(e.target.value),
-            }))
-          }
-          style={{ width: "100%" }}
-        />
-      </div>
-
-      <div style={{ fontSize: "10px", color: "#888", marginTop: "10px" }}>
-        🎯 Emissive materials auto-bloom | 🌟 25% random objects for testing
-      </div>
-    </div>
-  );
-}
-
-// 🚀 FUTURE PANEL TEMPLATE - Ready for easy expansion
-// Copy this template and modify for new debug panels
-function ExternalLightingDebugUI() {
-  // Don't use local state - use window data directly
-  const [windowData, setWindowData] = useState(null);
-
-  // Poll lighting data from window object
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (window.lightingDebugData) {
-        setWindowData(window.lightingDebugData);
-      }
-    }, 100);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  if (
-    !DEVELOPER_CONFIG.ENABLE_LIGHTING_DEBUG_UI ||
-    !DEVELOPER_CONFIG.ENABLE_DEBUG_MODE ||
-    !windowData
-  ) {
-    return null;
-  }
-
-  const updateLighting = (updates) => {
-    if (windowData.setLightingState) {
-      windowData.setLightingState((prev) => ({
-        ...prev,
-        ...updates,
-      }));
-    }
-  };
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        bottom: `${DEBUG_UI_CONFIG.bottomMargin}px`,
-        left: `${DEBUG_UI_CONFIG.getPanelPosition(
-          DEBUG_UI_CONFIG.panels.LIGHTING_DEBUG.index
-        )}px`,
-        background: "rgba(0, 0, 0, 0.9)",
-        color: "white",
-        padding: "15px",
-        borderRadius: "8px",
-        fontFamily: "monospace",
-        fontSize: "12px",
-        minWidth: `${DEBUG_UI_CONFIG.panelWidth}px`,
-        border: `2px solid ${DEBUG_UI_CONFIG.panels.LIGHTING_DEBUG.color}`,
-        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.5)",
-        zIndex: 1000,
-        pointerEvents: "auto",
-      }}
-    >
-      <div
-        style={{
-          color: `${DEBUG_UI_CONFIG.panels.LIGHTING_DEBUG.color}`,
-          fontWeight: "bold",
-          marginBottom: "15px",
-        }}
-      >
-        {DEBUG_UI_CONFIG.panels.LIGHTING_DEBUG.icon} LIGHTING DEBUG
-      </div>
-
-      <div style={{ marginBottom: "15px" }}>
-        <label style={{ display: "block", marginBottom: "5px" }}>
-          Ambient: {windowData.ambientIntensity.toFixed(2)}
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="2"
-          step="0.1"
-          value={windowData.ambientIntensity}
-          onChange={(e) =>
-            updateLighting({ ambientIntensity: parseFloat(e.target.value) })
-          }
-          style={{ width: "100%" }}
-        />
-      </div>
-
-      <div style={{ marginBottom: "15px" }}>
-        <label style={{ display: "block", marginBottom: "5px" }}>
-          Key Light: {windowData.keyLightIntensity.toFixed(2)}
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="5"
-          step="0.1"
-          value={windowData.keyLightIntensity}
-          onChange={(e) =>
-            updateLighting({ keyLightIntensity: parseFloat(e.target.value) })
-          }
-          style={{ width: "100%" }}
-        />
-      </div>
-
-      <div style={{ marginBottom: "15px" }}>
-        <label style={{ display: "block", marginBottom: "5px" }}>
-          Fill Light: {windowData.fillLightIntensity.toFixed(2)}
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="3"
-          step="0.1"
-          value={windowData.fillLightIntensity}
-          onChange={(e) =>
-            updateLighting({ fillLightIntensity: parseFloat(e.target.value) })
-          }
-          style={{ width: "100%" }}
-        />
-      </div>
-
-      <div style={{ marginBottom: "15px" }}>
-        <label style={{ display: "block", marginBottom: "5px" }}>
-          Rim Light: {windowData.rimLightIntensity.toFixed(2)}
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="4"
-          step="0.1"
-          value={windowData.rimLightIntensity}
-          onChange={(e) =>
-            updateLighting({ rimLightIntensity: parseFloat(e.target.value) })
-          }
-          style={{ width: "100%" }}
-        />
-      </div>
-
-      <div style={{ fontSize: "10px", color: "#888", marginTop: "10px" }}>
-        💡 Real-time lighting control | ⚡ Performance optimized
-      </div>
-    </div>
-  );
 }
 
 function Model({ target, onTargetChange, onAnimationsDetected }) {
@@ -1646,10 +562,6 @@ function Model({ target, onTargetChange, onAnimationsDetected }) {
 
   return (
     <>
-      {/* 🔧 DEVELOPER ONLY: Camera Debug System */}
-      {DEVELOPER_CONFIG.ENABLE_CAMERA_DEBUG_UI && (
-        <CameraDebugger target={target} onTargetChange={onTargetChange} />
-      )}
       {gltf?.scene ? (
         <primitive object={gltf.scene} />
       ) : (
@@ -1676,19 +588,23 @@ export default function Scene() {
   const [sharedTarget, setSharedTarget] = useState(CAMERA_CONFIG.target);
   const [hasWebGL, setHasWebGL] = useState(true);
 
+  // Use camera type switcher from CameraSystem
+  const [cameraType, setCameraType] = useCameraTypeSwitcher(
+    DEVELOPER_CONFIG,
+    (newType) => {
+      // Handle camera type change
+      if (DEVELOPER_CONFIG.ENABLE_CONSOLE_LOGS) {
+        console.log(`📷 Camera type changed to: ${newType}`);
+      }
+    }
+  );
+
   // Consolidated state management - all states in one place
   const [lightingState, setLightingState] = useState({
     ambientIntensity: VISUAL_CONFIG.ambientLight.intensity,
     keyLightIntensity: VISUAL_CONFIG.keyLight.intensity,
     fillLightIntensity: VISUAL_CONFIG.fillLight.intensity,
     rimLightIntensity: VISUAL_CONFIG.rimLight.intensity,
-  });
-
-  const [bloomParams, setBloomParams] = useState({
-    threshold: VISUAL_CONFIG.bloom.threshold,
-    strength: VISUAL_CONFIG.bloom.strength,
-    radius: VISUAL_CONFIG.bloom.radius,
-    exposure: VISUAL_CONFIG.bloom.exposure,
   });
 
   // Camera debug state
@@ -1718,33 +634,6 @@ export default function Scene() {
     }
   }, []);
 
-  // Create initial camera based on config
-  const createInitialCamera = () => {
-    if (CAMERA_CONFIG.perspective) {
-      return {
-        position: CAMERA_CONFIG.position,
-        fov: CAMERA_CONFIG.fov,
-      };
-    } else {
-      // Orthographic camera setup
-      const aspect =
-        typeof window !== "undefined"
-          ? window.innerWidth / window.innerHeight
-          : 1;
-      const frustumSize = 10;
-      return {
-        position: CAMERA_CONFIG.position,
-        left: (frustumSize * aspect) / -2,
-        right: (frustumSize * aspect) / 2,
-        top: frustumSize / 2,
-        bottom: frustumSize / -2,
-        near: 0.1,
-        far: 1000,
-        zoom: CAMERA_CONFIG.orthographic.zoom,
-      };
-    }
-  };
-
   // Fallback UI for WebGL issues
   if (!hasWebGL) {
     return (
@@ -1772,7 +661,8 @@ export default function Scene() {
   return (
     <>
       <Canvas
-        camera={createInitialCamera()}
+        key={cameraType} // Force re-render when camera type changes
+        camera={createInitialCamera(cameraType)}
         shadows // Enable shadows with optimization
         dpr={[1, 2]} // Responsive device pixel ratio for SSR safety
         performance={{ min: 0.5, max: 1, debounce: 200 }} // Smart performance management
@@ -1865,8 +755,7 @@ export default function Scene() {
             onAnimationsDetected={setAvailableAnimations}
           />
         </Suspense>
-        {/* 🔧 DEVELOPER ONLY: Camera Type Switcher */}
-        {DEVELOPER_CONFIG.ENABLE_DEBUG_MODE && <CameraSwitcher />}
+        {/* Camera System handles switching automatically */}
         {/* Optimized Contact Shadows for subtle realism */}
         <ContactShadows
           position={[0, 0, 0]}
@@ -1877,13 +766,17 @@ export default function Scene() {
           resolution={128} // Reduced for performance
           color="#000000"
         />
-        <ControlledOrbitControls target={sharedTarget} />
-        {/* High-Quality Selective Bloom System */}
-        <PostProcessingEffect bloomParams={bloomParams} />
-        {/* 🌟 DEVELOPER ONLY: Interactive Bloom Controls (Fixed Position) */}
-        <BloomControls
-          bloomParams={bloomParams}
-          setBloomParams={setBloomParams}
+        {/* Camera System includes OrbitControls and Debug Features */}
+        <CameraSystem
+          DEVELOPER_CONFIG={DEVELOPER_CONFIG}
+          target={sharedTarget}
+          onTargetChange={setSharedTarget}
+          cameraType={cameraType}
+        />
+        {/* Bloom System with PostProcessing and Controls */}
+        <BloomSystem
+          DEVELOPER_CONFIG={DEVELOPER_CONFIG}
+          VISUAL_CONFIG={VISUAL_CONFIG}
         />
         {/* 🎯 DEVELOPER ONLY: Interactive Collider System */}
         {DEVELOPER_CONFIG.ENABLE_COLLIDER_SYSTEM && (
@@ -1897,12 +790,23 @@ export default function Scene() {
         )}
       </Canvas>
 
-      {/* External Fixed UI Components (Completely Outside Canvas) */}
-      <ExternalCameraDebugUI />
-      <ExternalBloomDebugUI />
-      <ExternalLightingDebugUI />
+      {/* Fixed UI Components (Completely Outside Canvas) */}
+      <UIStyleInjector />
+      <CameraDebugUI
+        DEVELOPER_CONFIG={DEVELOPER_CONFIG}
+        DEBUG_UI_CONFIG={DEBUG_UI_CONFIG}
+      />
+      <BloomDebugUI
+        DEVELOPER_CONFIG={DEVELOPER_CONFIG}
+        DEBUG_UI_CONFIG={DEBUG_UI_CONFIG}
+        VISUAL_CONFIG={VISUAL_CONFIG}
+      />
+      <LightingDebugUI
+        DEVELOPER_CONFIG={DEVELOPER_CONFIG}
+        DEBUG_UI_CONFIG={DEBUG_UI_CONFIG}
+      />
       {DEVELOPER_CONFIG.ENABLE_COLLIDER_DEBUG_UI && (
-        <ExternalColliderDebugUI
+        <ColliderDebugUI
           colliders={colliders}
           onCollidersUpdate={setColliders}
           selectedCollider={selectedCollider}
@@ -1911,8 +815,8 @@ export default function Scene() {
         />
       )}
       {/* 🚀 Future panels ready for implementation:
-      <ExternalPerformanceDebugUI />
-      <ExternalMaterialDebugUI />
+      <PerformanceDebugUI />
+      <MaterialDebugUI />
       */}
     </>
   );
