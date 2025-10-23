@@ -271,6 +271,9 @@ function Collider({
     setIsHovered(true);
     onHover && onHover(colliderData.id);
 
+    // Change cursor to pointer when hovering over collider
+    gl.domElement.style.cursor = 'url("/pointer.png"), pointer';
+
     // Trigger hover animation if specified (both dev and prod mode)
     if (colliderData.animation && window.modelAnimations) {
       console.log(`🎬 Hover triggering animation: ${colliderData.animation}`);
@@ -282,6 +285,9 @@ function Collider({
     event.stopPropagation();
     setIsHovered(false);
     onUnhover && onUnhover(colliderData.id);
+
+    // Reset cursor to default when leaving collider
+    gl.domElement.style.cursor = 'url("/cursor.png"), auto';
 
     // Stop animation on hover out if specified (both dev and prod mode)
     if (colliderData.animation && window.modelAnimations) {

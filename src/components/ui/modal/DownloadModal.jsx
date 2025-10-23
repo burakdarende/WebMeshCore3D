@@ -325,15 +325,27 @@ export function DownloadModal() {
                         .replace("#", "")
                         .match(/.{2}/g)
                         .map((x) => parseInt(x, 16))
-                        .join(", ")}, 0.2)`
-                    : "rgba(30, 41, 59, 0.8)",
+                        .join(", ")}, 0.15)`
+                    : "rgba(30, 41, 59, 0.6)",
+                backdropFilter:
+                  hoveredPlatform === platform.name
+                    ? "blur(16px)"
+                    : "blur(12px)",
+                WebkitBackdropFilter:
+                  hoveredPlatform === platform.name
+                    ? "blur(16px)"
+                    : "blur(12px)",
                 borderRadius: "12px",
                 padding: "20px",
                 cursor: "pointer",
                 transition: "all 0.3s ease",
-                border: `2px solid ${
+                border: `1px solid ${
                   hoveredPlatform === platform.name
-                    ? platform.color
+                    ? `rgba(${platform.color
+                        .replace("#", "")
+                        .match(/.{2}/g)
+                        .map((x) => parseInt(x, 16))
+                        .join(", ")}, 0.4)`
                     : "rgba(71, 85, 105, 0.3)"
                 }`,
                 transform:
@@ -346,8 +358,8 @@ export function DownloadModal() {
                         .replace("#", "")
                         .match(/.{2}/g)
                         .map((x) => parseInt(x, 16))
-                        .join(", ")}, 0.3)`
-                    : "0 2px 8px rgba(0, 0, 0, 0.3)",
+                        .join(", ")}, 0.2)`
+                    : "0 2px 8px rgba(0, 0, 0, 0.2)",
               }}
             >
               <div
@@ -415,29 +427,41 @@ export function DownloadModal() {
                 padding: "10px 16px",
                 background:
                   selectedCategory === category.id
-                    ? "rgba(34, 197, 94, 0.2)"
-                    : "rgba(71, 85, 105, 0.3)",
+                    ? "rgba(34, 197, 94, 0.15)"
+                    : "rgba(71, 85, 105, 0.2)",
+                backdropFilter:
+                  selectedCategory === category.id ? "blur(12px)" : "blur(8px)",
+                WebkitBackdropFilter:
+                  selectedCategory === category.id ? "blur(12px)" : "blur(8px)",
                 borderRadius: "8px",
                 border:
                   selectedCategory === category.id
-                    ? "2px solid rgba(34, 197, 94, 0.5)"
-                    : "2px solid rgba(71, 85, 105, 0.3)",
+                    ? "1px solid rgba(34, 197, 94, 0.4)"
+                    : "1px solid rgba(71, 85, 105, 0.3)",
                 color: selectedCategory === category.id ? "#4ade80" : "#cbd5e1",
                 cursor: "pointer",
                 transition: "all 0.2s ease",
                 fontSize: "0.9rem",
                 fontWeight: "500",
+                boxShadow:
+                  selectedCategory === category.id
+                    ? "0 4px 12px rgba(34, 197, 94, 0.1)"
+                    : "0 2px 8px rgba(0, 0, 0, 0.1)",
               }}
               onMouseOver={(e) => {
                 if (selectedCategory !== category.id) {
-                  e.target.style.background = "rgba(71, 85, 105, 0.4)";
-                  e.target.style.borderColor = "rgba(71, 85, 105, 0.5)";
+                  e.target.style.background = "rgba(71, 85, 105, 0.3)";
+                  e.target.style.borderColor = "rgba(71, 85, 105, 0.4)";
+                  e.target.style.backdropFilter = "blur(10px)";
+                  e.target.style.WebkitBackdropFilter = "blur(10px)";
                 }
               }}
               onMouseOut={(e) => {
                 if (selectedCategory !== category.id) {
-                  e.target.style.background = "rgba(71, 85, 105, 0.3)";
+                  e.target.style.background = "rgba(71, 85, 105, 0.2)";
                   e.target.style.borderColor = "rgba(71, 85, 105, 0.3)";
+                  e.target.style.backdropFilter = "blur(8px)";
+                  e.target.style.WebkitBackdropFilter = "blur(8px)";
                 }
               }}
             >
@@ -461,25 +485,31 @@ export function DownloadModal() {
               key={download.id}
               onClick={() => handleDownloadClick(download)}
               style={{
-                background: "rgba(30, 41, 59, 0.8)",
+                background: "rgba(30, 41, 59, 0.6)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
                 borderRadius: "12px",
                 overflow: "hidden",
                 cursor: "pointer",
                 transition: "all 0.3s ease",
-                border: "2px solid rgba(71, 85, 105, 0.3)",
-                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
+                border: "1px solid rgba(71, 85, 105, 0.3)",
+                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
               }}
               onMouseOver={(e) => {
                 e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.borderColor = "rgba(34, 197, 94, 0.5)";
+                e.currentTarget.style.borderColor = "rgba(34, 197, 94, 0.4)";
                 e.currentTarget.style.boxShadow =
-                  "0 12px 32px rgba(34, 197, 94, 0.2)";
+                  "0 12px 32px rgba(34, 197, 94, 0.15)";
+                e.currentTarget.style.backdropFilter = "blur(16px)";
+                e.currentTarget.style.WebkitBackdropFilter = "blur(16px)";
               }}
               onMouseOut={(e) => {
                 e.currentTarget.style.transform = "translateY(0)";
                 e.currentTarget.style.borderColor = "rgba(71, 85, 105, 0.3)";
                 e.currentTarget.style.boxShadow =
-                  "0 4px 12px rgba(0, 0, 0, 0.3)";
+                  "0 4px 12px rgba(0, 0, 0, 0.2)";
+                e.currentTarget.style.backdropFilter = "blur(12px)";
+                e.currentTarget.style.WebkitBackdropFilter = "blur(12px)";
               }}
             >
               {/* Preview Image */}
@@ -653,15 +683,18 @@ export function DownloadModal() {
                 {/* Download Button */}
                 <div
                   style={{
-                    background:
-                      "linear-gradient(135deg, #4ade80 0%, #22c55e 100%)",
-                    color: "white",
+                    background: "rgba(34, 197, 94, 0.2)",
+                    backdropFilter: "blur(12px)",
+                    WebkitBackdropFilter: "blur(12px)",
+                    border: "1px solid rgba(34, 197, 94, 0.3)",
+                    color: "#4ade80",
                     padding: "12px 16px",
                     borderRadius: "8px",
                     fontSize: "0.9rem",
                     fontWeight: "600",
                     textAlign: "center",
                     transition: "all 0.2s ease",
+                    boxShadow: "0 4px 12px rgba(34, 197, 94, 0.1)",
                   }}
                 >
                   {download.price === "Free"
@@ -677,10 +710,13 @@ export function DownloadModal() {
         <div
           style={{
             padding: "24px",
-            background: "rgba(71, 85, 105, 0.3)",
+            background: "rgba(71, 85, 105, 0.2)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
             borderRadius: "12px",
             border: "1px solid rgba(148, 163, 184, 0.2)",
             textAlign: "center",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
           }}
         >
           <h4

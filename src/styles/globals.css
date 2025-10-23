@@ -7,4 +7,70 @@ body,
   height: 100%;
   overflow: hidden;
   background: #1a1a1a; /* Neutral background */
+  cursor: url("/cursor.png"), auto; /* Custom default cursor */
+}
+
+/* Custom Cursor Styles */
+* {
+  cursor: url("/cursor.png"), auto;
+}
+
+/* Pointer cursor for interactive elements */
+a,
+button,
+input[type="submit"],
+input[type="button"],
+input[type="reset"],
+select,
+[role="button"],
+[tabindex]:not([tabindex="-1"]),
+.cursor-pointer {
+  cursor: url("/pointer.png"), pointer !important;
+}
+
+/* Hover states for interactive elements */
+a:hover,
+button:hover,
+input[type="submit"]:hover,
+input[type="button"]:hover,
+input[type="reset"]:hover,
+select:hover,
+[role="button"]:hover,
+[tabindex]:not([tabindex="-1"]):hover,
+.cursor-pointer:hover {
+  cursor: url("/pointer.png"), pointer !important;
+}
+
+/* Custom Scrollbar Styles - Dark Glass Theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 4px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+::-webkit-scrollbar-corner {
+  background: rgba(15, 23, 42, 0.3);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.4) rgba(15, 23, 42, 0.3);
 }
