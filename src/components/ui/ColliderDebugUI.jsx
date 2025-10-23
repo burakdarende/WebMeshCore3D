@@ -10,6 +10,13 @@ import {
   ColliderUtils,
   AVAILABLE_ANIMATIONS,
 } from "../systems/ColliderConfig";
+import { useModalActions } from "./modal/ModalSystem";
+import { AboutModal } from "./modal/ModalContents";
+import { DownloadModal } from "./modal/DownloadModal";
+import { MusicModal } from "./modal/MusicModal";
+import { ContactModal } from "./modal/ContactModal";
+import { GamesModal } from "./modal/GamesModal";
+import { PortfolioModal } from "./modal/PortfolioModal";
 
 export function ColliderDebugUI({
   colliders,
@@ -21,6 +28,7 @@ export function ColliderDebugUI({
   const [jsonCode, setJsonCode] = useState("");
   const [showJsonEditor, setShowJsonEditor] = useState(false);
   const { position, isVisible } = useDebugUIPosition("colliderDebug");
+  const modalActions = useModalActions();
 
   // Update JSON when colliders change
   useEffect(() => {
@@ -67,6 +75,58 @@ export function ColliderDebugUI({
   };
 
   const selectedColliderData = colliders.find((c) => c.id === selectedCollider);
+
+  const testModalSystem = () => {
+    modalActions.showCustom(<AboutModal />, {
+      title: "🎯 Modal System Test",
+      size: "medium",
+      glassMorphism: true,
+    });
+  };
+
+  const assignModalToCollider = (modalType) => {
+    if (!selectedCollider) {
+      alert("Please select a collider first!");
+      return;
+    }
+
+    const modalLink = `modal:${modalType}`;
+    updateSelectedCollider({ link: modalLink });
+
+    // Show a preview of the assigned modal
+    let modalContent, title;
+    switch (modalType) {
+      case "download":
+        modalContent = <DownloadModal />;
+        title = "📥 Downloads & Assets";
+        break;
+      case "music":
+        modalContent = <MusicModal />;
+        title = "🎵 Music & Audio";
+        break;
+      case "contact":
+        modalContent = <ContactModal />;
+        title = "💬 Contact Form";
+        break;
+      case "games":
+        modalContent = <GamesModal />;
+        title = "🎮 Games Portfolio";
+        break;
+      case "portfolio":
+        modalContent = <PortfolioModal />;
+        title = "🎨 Creative Portfolio";
+        break;
+      default:
+        modalContent = <AboutModal />;
+        title = "📖 About";
+    }
+
+    modalActions.showCustom(modalContent, {
+      title: `${title} - Assigned to ${selectedCollider}`,
+      size: "large",
+      glassMorphism: true,
+    });
+  };
 
   if (!process.env.NODE_ENV || process.env.NODE_ENV === "development") {
     // Only show in development
@@ -139,9 +199,24 @@ export function ColliderDebugUI({
               borderRadius: "4px",
               cursor: selectedCollider ? "pointer" : "not-allowed",
               fontSize: "11px",
+              marginRight: "10px",
             }}
           >
             🗑️ Delete
+          </button>
+          <button
+            onClick={testModalSystem}
+            style={{
+              background: "#6f42c1",
+              color: "white",
+              border: "none",
+              padding: "8px 12px",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontSize: "11px",
+            }}
+          >
+            🚀 Test Modal
           </button>
         </div>
 
@@ -398,7 +473,7 @@ export function ColliderDebugUI({
                 // Re-enable global keyboard shortcuts when unfocused
                 delete e.target.dataset.keyboardDisabled;
               }}
-              placeholder="https://example.com"
+              placeholder="https://example.com or modal:type"
               style={{
                 width: "100%",
                 padding: "4px",
@@ -409,6 +484,101 @@ export function ColliderDebugUI({
                 fontSize: "10px",
               }}
             />
+
+            {/* Quick Modal Assignment Buttons */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr 1fr",
+                gap: "5px",
+                marginTop: "8px",
+              }}
+            >
+              <button
+                onClick={() => assignModalToCollider("download")}
+                style={{
+                  padding: "6px 8px",
+                  background: "#22c55e",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "3px",
+                  cursor: "pointer",
+                  fontSize: "9px",
+                }}
+              >
+                📥 Download
+              </button>
+              <button
+                onClick={() => assignModalToCollider("music")}
+                style={{
+                  padding: "6px 8px",
+                  background: "#8b5cf6",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "3px",
+                  cursor: "pointer",
+                  fontSize: "9px",
+                }}
+              >
+                🎵 Music
+              </button>
+              <button
+                onClick={() => assignModalToCollider("contact")}
+                style={{
+                  padding: "6px 8px",
+                  background: "#3b82f6",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "3px",
+                  cursor: "pointer",
+                  fontSize: "9px",
+                }}
+              >
+                💬 Contact
+              </button>
+              <button
+                onClick={() => assignModalToCollider("games")}
+                style={{
+                  padding: "6px 8px",
+                  background: "#f59e0b",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "3px",
+                  cursor: "pointer",
+                  fontSize: "9px",
+                }}
+              >
+                🎮 Games
+              </button>
+              <button
+                onClick={() => assignModalToCollider("portfolio")}
+                style={{
+                  padding: "6px 8px",
+                  background: "#ec4899",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "3px",
+                  cursor: "pointer",
+                  fontSize: "9px",
+                }}
+              >
+                🎨 Portfolio
+              </button>
+              <button
+                onClick={() => updateSelectedCollider({ link: "" })}
+                style={{
+                  padding: "6px 8px",
+                  background: "#ef4444",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "3px",
+                  cursor: "pointer",
+                  fontSize: "9px",
+                }}
+              >
+                🗑️ Clear
+              </button>
+            </div>
           </div>
 
           {/* Animation Selection */}

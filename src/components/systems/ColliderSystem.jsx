@@ -1,12 +1,24 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // 3D COLLIDER SYSTEM
 // ═══════════════════════════════════════════════════════════════════════════════
-// Interactive 3D colliders with visual feedback, hover effects, and manipulation
+// Interactive 3D colliders with visual feedback, hover effects, and modal system
 
 import React, { useRef, useState, useEffect } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { COLLIDER_CONFIG } from "./ColliderConfig";
+import { useModalActions } from "../ui/modal/ModalSystem";
+import {
+  AboutModal,
+  ContactModal,
+  GalleryModal,
+  DocumentationModal,
+} from "../ui/modal/ModalContents";
+import { DownloadModal } from "../ui/modal/DownloadModal";
+import { MusicModal } from "../ui/modal/MusicModal";
+import { ContactModal as EnhancedContactModal } from "../ui/modal/ContactModal";
+import { GamesModal } from "../ui/modal/GamesModal";
+import { PortfolioModal } from "../ui/modal/PortfolioModal";
 
 // Individual Collider Component with manipulation handles
 function Collider({
@@ -18,10 +30,12 @@ function Collider({
   onUnhover,
   onLinkClick,
   enableDev = true,
+  debugPanelsVisible = true,
 }) {
   const meshRef = useRef();
   const handlesRef = useRef([]);
   const { camera, gl } = useThree();
+  const modalActions = useModalActions();
 
   const [isHovered, setIsHovered] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -31,7 +45,7 @@ function Collider({
 
   // Listen for G key + axis keys for transform mode
   useEffect(() => {
-    if (!enableDev || !isSelected) return;
+    if (!enableDev || !isSelected || !debugPanelsVisible) return;
 
     const handleKeyDown = (event) => {
       const key = event.key.toLowerCase();
@@ -60,11 +74,11 @@ function Collider({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [enableDev, isSelected, isDragging, dragMode]);
+  }, [enableDev, isSelected, isDragging, dragMode, debugPanelsVisible]);
 
   // Handle mouse events for manipulation
   const handlePointerDown = (event) => {
-    if (!enableDev || !dragMode) return;
+    if (!enableDev || !debugPanelsVisible || !dragMode) return;
 
     event.stopPropagation();
     setIsDragging(true);
@@ -154,8 +168,8 @@ function Collider({
   const handleClick = (event) => {
     event.stopPropagation();
 
-    if (enableDev) {
-      // Dev mode: handle selection AND animation
+    if (enableDev && debugPanelsVisible) {
+      // Dev mode with debug panels: handle selection AND animation
       onSelect(colliderData.id);
 
       // Also trigger animation in dev mode
@@ -166,9 +180,9 @@ function Collider({
         window.modelAnimations.play(colliderData.animation);
       }
     } else {
-      // Production mode: handle link and animation
+      // Production mode OR debug panels hidden: handle link and animation
       if (colliderData.link) {
-        onLinkClick(colliderData.link);
+        handleLinkAction(colliderData.link);
       }
 
       // Trigger animation if specified
@@ -178,6 +192,76 @@ function Collider({
         );
         window.modelAnimations.play(colliderData.animation);
       }
+    }
+  };
+
+  // Handle different types of links
+  const handleLinkAction = (link) => {
+    if (!link) return;
+
+    // Check if it's a modal link (starts with modal:)
+    if (link.startsWith("modal:")) {
+      const modalType = link.replace("modal:", "");
+
+      switch (modalType) {
+        case "about":
+          modalActions.showCustom(<AboutModal />, {
+            title: "About WebMeshCore3D",
+            size: "medium",
+          });
+          break;
+        case "contact":
+          modalActions.showCustom(<EnhancedContactModal />, {
+            title: "Contact Information",
+            size: "medium",
+          });
+          break;
+        case "gallery":
+          modalActions.showCustom(<GalleryModal />, {
+            title: "Project Gallery",
+            size: "large",
+          });
+          break;
+        case "documentation":
+          modalActions.showCustom(<DocumentationModal />, {
+            title: "Documentation",
+            size: "large",
+          });
+          break;
+        case "download":
+          modalActions.showCustom(<DownloadModal />, {
+            title: "Download Center",
+            size: "large",
+            glassMorphism: true,
+          });
+          break;
+        case "music":
+          modalActions.showCustom(<MusicModal />, {
+            title: "Music & Audio",
+            size: "large",
+            glassMorphism: true,
+          });
+          break;
+        case "games":
+          modalActions.showCustom(<GamesModal />, {
+            title: "Games Portfolio",
+            size: "large",
+            glassMorphism: true,
+          });
+          break;
+        case "portfolio":
+          modalActions.showCustom(<PortfolioModal />, {
+            title: "Creative Portfolio",
+            size: "large",
+            glassMorphism: true,
+          });
+          break;
+        default:
+          console.warn(`Unknown modal type: ${modalType}`);
+      }
+    } else {
+      // External link - open in new tab
+      window.open(link, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -231,7 +315,7 @@ function Collider({
 
   // Apply hover effects to scale (simplified - only slight scale on hover)
   const getEffectiveScale = () => {
-    if (isHovered && !enableDev) {
+    if (isHovered && (!enableDev || !debugPanelsVisible)) {
       const multiplier = 1.05; // Slight 5% scale increase on hover
       return (colliderData.size || [1, 1, 1]).map((s) => s * multiplier);
     }
@@ -273,7 +357,7 @@ function Collider({
       </mesh>
 
       {/* Axis constraint indicator */}
-      {enableDev && isDragging && constraintAxis && (
+      {enableDev && debugPanelsVisible && isDragging && constraintAxis && (
         <AxisConstraintIndicator axis={constraintAxis} />
       )}
     </group>
@@ -338,6 +422,7 @@ export function ColliderSystem({
   selectedCollider,
   onSelectCollider,
   enableDev = true,
+  debugPanelsVisible = true,
 }) {
   const [hoveredCollider, setHoveredCollider] = useState(null);
 
@@ -356,6 +441,7 @@ export function ColliderSystem({
     setHoveredCollider(null);
   };
 
+  // Legacy link handler (keeping for backward compatibility)
   const handleLinkClick = (link) => {
     if (link) {
       window.open(link, "_blank");
@@ -375,6 +461,7 @@ export function ColliderSystem({
           onUnhover={handleColliderUnhover}
           onLinkClick={handleLinkClick}
           enableDev={enableDev}
+          debugPanelsVisible={debugPanelsVisible}
         />
       ))}
     </>

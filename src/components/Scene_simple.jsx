@@ -68,6 +68,9 @@ import { BloomDebugUI } from "./ui/BloomDebugUI";
 import { LightingDebugUI } from "./ui/LightingDebugUI";
 import { ColliderDebugUI } from "./ui/ColliderDebugUI";
 
+// Modal System
+import { ModalProvider } from "./ui/modal/ModalSystem";
+
 // Import centralized configuration
 import {
   DEVELOPER_CONFIG,
@@ -499,6 +502,11 @@ export default function Scene() {
   const [sharedTarget, setSharedTarget] = useState(CAMERA_CONFIG.target);
   const [hasWebGL, setHasWebGL] = useState(true);
 
+  // Debug panels visibility state
+  const [debugPanelsVisible, setDebugPanelsVisible] = useState(
+    DEVELOPER_CONFIG.ENABLE_DEBUG_MODE
+  );
+
   // Use camera type switcher from CameraSystem
   const [cameraType, setCameraType] = useCameraTypeSwitcher(
     DEVELOPER_CONFIG,
@@ -561,6 +569,25 @@ export default function Scene() {
     }
   }, []);
 
+  // H key listener for debug panels toggle
+  useEffect(() => {
+    if (!DEVELOPER_CONFIG.ENABLE_DEBUG_MODE) return;
+
+    const handleKeyDown = (event) => {
+      if (event.key.toLowerCase() === "h") {
+        setDebugPanelsVisible((prev) => {
+          const newState = !prev;
+          console.log(`🎛️ Debug panels ${newState ? "shown" : "hidden"}`);
+          return newState;
+        });
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   // Fallback UI for WebGL issues
   if (!hasWebGL) {
     return (
@@ -586,7 +613,7 @@ export default function Scene() {
   }
 
   return (
-    <>
+    <ModalProvider>
       <Canvas
         key={cameraType} // Force re-render when camera type changes
         camera={createInitialCamera(cameraType)}
@@ -683,6 +710,7 @@ export default function Scene() {
             selectedCollider={selectedCollider}
             onSelectCollider={setSelectedCollider}
             enableDev={DEVELOPER_CONFIG.ENABLE_DEBUG_MODE}
+            debugPanelsVisible={debugPanelsVisible}
           />
         )}
       </Canvas>
@@ -690,7 +718,7 @@ export default function Scene() {
       {/* Fixed UI Components (Completely Outside Canvas) */}
       <UIStyleInjector />
       <UILayoutManager DEVELOPER_CONFIG={DEVELOPER_CONFIG}>
-        {DEVELOPER_CONFIG.ENABLE_DEBUG_MODE && (
+        {DEVELOPER_CONFIG.ENABLE_DEBUG_MODE && debugPanelsVisible && (
           <>
             <CameraDebugUI
               DEVELOPER_CONFIG={DEVELOPER_CONFIG}
@@ -719,6 +747,6 @@ export default function Scene() {
       <PerformanceDebugUI />
       <MaterialDebugUI />
       */}
-    </>
+    </ModalProvider>
   );
 }
