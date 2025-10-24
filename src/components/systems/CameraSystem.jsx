@@ -249,6 +249,9 @@ export function CameraControls({
   const [isFocusMode, setIsFocusMode] = useState(false); // Track focus manipulation mode
   const [autoRotateEnabled, setAutoRotateEnabled] = useState(false); // Auto rotate state
   const [cameraLocked, setCameraLocked] = useState(false); // Camera lock state
+  const [mouseTrackingEnabled, setMouseTrackingEnabled] = useState(false); // Mouse tracking state
+  const [mouseTrackingIntensity, setMouseTrackingIntensity] = useState(1.0); // Mouse tracking intensity
+  const mouseTrackingIntensityRef = useRef(1.0); // Ref for intensity to avoid useEffect restart
 
   // FOV/Zoom state for both camera types
   const [fovValue, setFovValue] = useState(() => {
@@ -406,6 +409,10 @@ export function CameraControls({
     };
 
     let currentCameraLocked = cameraLocked;
+    let currentMouseTrackingState = {
+      enabled: mouseTrackingEnabled,
+      intensity: mouseTrackingIntensity,
+    };
 
     window.cameraControls = {
       setAutoRotate: (enabled, speed = 2.0, direction = "right") => {
@@ -445,6 +452,28 @@ export function CameraControls({
       getCameraLockState: () => {
         return currentCameraLocked;
       },
+      setMouseTracking: (enabled, intensity = 1.0) => {
+        setMouseTrackingEnabled(enabled);
+        setMouseTrackingIntensity(intensity);
+
+        // Update stored state
+        currentMouseTrackingState = { enabled, intensity };
+
+        console.log(
+          `📷 Mouse tracking ${
+            enabled ? "enabled" : "disabled"
+          } - Intensity: ${intensity}`
+        );
+      },
+      getMouseTrackingState: () => {
+        return { ...currentMouseTrackingState };
+      },
+      setMouseTrackingIntensity: (intensity) => {
+        setMouseTrackingIntensity(intensity);
+        mouseTrackingIntensityRef.current = intensity; // Update ref immediately
+        currentMouseTrackingState.intensity = intensity;
+        console.log(`📷 Mouse tracking intensity updated to: ${intensity}`);
+      },
     };
 
     return () => {
@@ -474,15 +503,101 @@ export function CameraControls({
     }
   });
 
+  // Mouse tracking system
+  useEffect(() => {
+    if (!mouseTrackingEnabled || cameraLocked || !orbitControlsRef.current)
+      return;
+
+    let lastMouseX = 0;
+
+    const handleMouseMove = (event) => {
+      // Normalize mouse position (-1 to 1)
+      const currentMouseX = (event.clientX / window.innerWidth) * 2 - 1;
+
+      // Calculate mouse movement delta
+      const mouseDelta = currentMouseX - lastMouseX;
+      lastMouseX = currentMouseX;
+
+      // Only rotate if there's significant mouse movement
+      if (Math.abs(mouseDelta) > 0.001) {
+        // Use current intensity from ref to avoid useEffect restart
+        const mouseTrackingSpeed = 0.3 * mouseTrackingIntensityRef.current;
+
+        // Mouse right (+) -> Camera rotates right (positive azimuth)
+        // Mouse left (-) -> Camera rotates left (negative azimuth)
+        const azimuthDelta = mouseDelta * mouseTrackingSpeed;
+
+        // Apply the rotation
+        if (orbitControlsRef.current) {
+          orbitControlsRef.current.object.position.applyAxisAngle(
+            new THREE.Vector3(0, 1, 0),
+            azimuthDelta
+          );
+
+          // Look at the target
+          orbitControlsRef.current.object.lookAt(
+            orbitControlsRef.current.target.x,
+            orbitControlsRef.current.target.y,
+            orbitControlsRef.current.target.z
+          );
+        }
+      }
+    };
+
+    // Camera position shift with 3 and 4 keys when mouse tracking is active
+    const handleKeyDown = (event) => {
+      if (!mouseTrackingEnabled || cameraLocked || !orbitControlsRef.current)
+        return;
+
+      const shiftStep = 0.5; // Distance to shift camera position
+
+      if (event.key === "3") {
+        // Shift camera position to the left
+        const leftVector = new THREE.Vector3();
+        orbitControlsRef.current.object.getWorldDirection(leftVector);
+        leftVector.cross(new THREE.Vector3(0, 1, 0)).normalize();
+
+        orbitControlsRef.current.object.position.add(
+          leftVector.multiplyScalar(-shiftStep)
+        );
+        console.log("📷 Camera shifted left");
+      } else if (event.key === "4") {
+        // Shift camera position to the right
+        const rightVector = new THREE.Vector3();
+        orbitControlsRef.current.object.getWorldDirection(rightVector);
+        rightVector.cross(new THREE.Vector3(0, 1, 0)).normalize();
+
+        orbitControlsRef.current.object.position.add(
+          rightVector.multiplyScalar(shiftStep)
+        );
+        console.log("📷 Camera shifted right");
+      }
+    };
+
+    // Add event listeners
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [mouseTrackingEnabled, cameraLocked]); // Removed mouseTrackingIntensity from dependencies
+
+  // Update intensity ref when state changes
+  useEffect(() => {
+    mouseTrackingIntensityRef.current = mouseTrackingIntensity;
+  }, [mouseTrackingIntensity]);
+
   return (
     <>
       <OrbitControls
         ref={orbitControlsRef}
         enableDamping={CAMERA_CONFIG.enableDamping}
         dampingFactor={CAMERA_CONFIG.dampingFactor}
-        enableZoom={!isFocusMode && !cameraLocked}
-        enablePan={!isFocusMode && !cameraLocked}
-        enableRotate={!isFocusMode && !cameraLocked}
+        enableZoom={!isFocusMode && !cameraLocked && !mouseTrackingEnabled}
+        enablePan={!isFocusMode && !cameraLocked && !mouseTrackingEnabled}
+        enableRotate={!isFocusMode && !cameraLocked && !mouseTrackingEnabled}
         autoRotate={autoRotateEnabled}
         autoRotateSpeed={2.0}
         maxDistance={CAMERA_CONFIG.maxDistance}

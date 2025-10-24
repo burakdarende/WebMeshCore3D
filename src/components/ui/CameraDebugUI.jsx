@@ -13,6 +13,8 @@ export function CameraDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
   const [autoRotateSpeed, setAutoRotateSpeed] = useState(2.0);
   const [autoRotateDirection, setAutoRotateDirection] = useState("right");
   const [cameraLocked, setCameraLocked] = useState(false);
+  const [mouseTracking, setMouseTracking] = useState(false);
+  const [mouseTrackingIntensity, setMouseTrackingIntensity] = useState(0.5);
   const [isMinimized, setIsMinimized] = useState(false);
   const { position, isVisible } = useDebugUIPosition("cameraDebug");
 
@@ -26,15 +28,28 @@ export function CameraDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
       // Sync auto rotate state from camera system
       if (window.cameraControls && window.cameraControls.getAutoRotateState) {
         const state = window.cameraControls.getAutoRotateState();
-        setAutoRotate(state.enabled);
-        setAutoRotateSpeed(state.speed);
-        setAutoRotateDirection(state.direction);
+        if (state.enabled !== autoRotate) setAutoRotate(state.enabled);
+        if (state.speed !== autoRotateSpeed) setAutoRotateSpeed(state.speed);
+        if (state.direction !== autoRotateDirection)
+          setAutoRotateDirection(state.direction);
       }
 
       // Sync camera lock state from camera system
       if (window.cameraControls && window.cameraControls.getCameraLockState) {
         const lockState = window.cameraControls.getCameraLockState();
-        setCameraLocked(lockState);
+        if (lockState !== cameraLocked) setCameraLocked(lockState);
+      }
+
+      // Sync mouse tracking state from camera system
+      if (
+        window.cameraControls &&
+        window.cameraControls.getMouseTrackingState
+      ) {
+        const trackState = window.cameraControls.getMouseTrackingState();
+        if (trackState.enabled !== mouseTracking)
+          setMouseTracking(trackState.enabled);
+        if (trackState.intensity !== mouseTrackingIntensity)
+          setMouseTrackingIntensity(trackState.intensity);
       }
     }, 100); // Update every 100ms
 
@@ -50,6 +65,15 @@ export function CameraDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
       console.log("📷 Cannot enable auto rotate while camera is locked");
       return;
     }
+
+    // If auto rotate is enabled, disable mouse tracking
+    // Temporarily disabled to prevent circular dependency
+    // if (enabled && mouseTracking) {
+    //   setMouseTracking(false);
+    //   if (window.cameraControls) {
+    //     window.cameraControls.setMouseTracking(false, mouseTrackingIntensity);
+    //   }
+    // }
 
     setAutoRotate(enabled);
 
@@ -114,6 +138,55 @@ export function CameraDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
     }
 
     console.log(`📷 Camera ${locked ? "locked" : "unlocked"}`);
+  };
+
+  // Handle mouse tracking toggle
+  const handleMouseTrackingChange = (e) => {
+    const enabled = e.target.checked;
+
+    // If trying to enable mouse tracking while camera is locked, prevent it
+    if (enabled && cameraLocked) {
+      console.log("📷 Cannot enable mouse tracking while camera is locked");
+      return;
+    }
+
+    // If mouse tracking is enabled, disable auto rotate
+    if (enabled && autoRotate) {
+      setAutoRotate(false);
+      if (window.cameraControls) {
+        window.cameraControls.setAutoRotate(
+          false,
+          autoRotateSpeed,
+          autoRotateDirection
+        );
+      }
+    }
+
+    setMouseTracking(enabled);
+
+    if (window.cameraControls) {
+      window.cameraControls.setMouseTracking(enabled, mouseTrackingIntensity);
+    }
+
+    console.log(
+      `📷 Mouse tracking ${
+        enabled ? "enabled" : "disabled"
+      } - Local state: ${enabled}`
+    );
+  };
+
+  // Handle mouse tracking intensity change
+  const handleMouseTrackingIntensityChange = (e) => {
+    const intensity = parseFloat(e.target.value);
+    setMouseTrackingIntensity(intensity);
+
+    // Update only intensity without restarting mouse tracking
+    if (
+      window.cameraControls &&
+      window.cameraControls.setMouseTrackingIntensity
+    ) {
+      window.cameraControls.setMouseTrackingIntensity(intensity);
+    }
   };
 
   if (
@@ -236,25 +309,30 @@ export function CameraDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
               style={{
                 display: "flex",
                 alignItems: "center",
-                cursor: cameraLocked ? "not-allowed" : "pointer",
-                opacity: cameraLocked ? 0.5 : 1,
+                cursor:
+                  cameraLocked || mouseTracking ? "not-allowed" : "pointer",
+                opacity: cameraLocked || mouseTracking ? 0.5 : 1,
               }}
             >
               <input
                 type="checkbox"
                 checked={autoRotate}
                 onChange={handleAutoRotateChange}
-                disabled={cameraLocked}
+                disabled={cameraLocked || mouseTracking}
                 style={{ marginRight: "8px" }}
               />
               <span style={{ color: autoRotate ? "#4ade80" : "#ffffff" }}>
                 🔄 Auto Rotate{" "}
-                {cameraLocked ? "(Disabled - Camera Locked)" : ""}
+                {cameraLocked
+                  ? "(Disabled - Camera Locked)"
+                  : mouseTracking
+                  ? "(Disabled - Mouse Tracking Active)"
+                  : ""}
               </span>
             </label>
 
             {/* Auto Rotate Settings */}
-            {autoRotate && !cameraLocked && (
+            {autoRotate && !cameraLocked && !mouseTracking && (
               <div style={{ marginTop: "10px", marginLeft: "20px" }}>
                 {/* Speed Control */}
                 <div style={{ marginBottom: "8px" }}>
@@ -375,6 +453,91 @@ export function CameraDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
                 }}
               >
                 Camera controls disabled
+              </div>
+            )}
+          </div>
+
+          {/* Mouse Tracking Control */}
+          <div
+            style={{
+              marginBottom: "10px",
+              paddingTop: "5px",
+              borderTop: "1px solid #333",
+            }}
+          >
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                cursor: cameraLocked || autoRotate ? "not-allowed" : "pointer",
+                opacity: cameraLocked || autoRotate ? 0.5 : 1,
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={mouseTracking}
+                onChange={handleMouseTrackingChange}
+                disabled={cameraLocked || autoRotate}
+                style={{ marginRight: "8px" }}
+              />
+              <span style={{ color: mouseTracking ? "#8b5cf6" : "#ffffff" }}>
+                🎯 Mouse Tracking{" "}
+                {cameraLocked
+                  ? "(Disabled - Camera Locked)"
+                  : autoRotate
+                  ? "(Disabled - Auto Rotate Active)"
+                  : ""}
+              </span>
+            </label>
+
+            {/* Mouse Tracking Intensity */}
+            {mouseTracking && !cameraLocked && !autoRotate && (
+              <div style={{ marginTop: "10px", marginLeft: "20px" }}>
+                <div style={{ marginBottom: "8px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "11px",
+                      color: "#ccc",
+                      marginBottom: "3px",
+                    }}
+                  >
+                    Intensity: {mouseTrackingIntensity.toFixed(1)}
+                  </label>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="2.0"
+                    step="0.1"
+                    value={mouseTrackingIntensity}
+                    onChange={handleMouseTrackingIntensityChange}
+                    style={{
+                      width: "100%",
+                      height: "4px",
+                      background: "#333",
+                      outline: "none",
+                      borderRadius: "2px",
+                    }}
+                  />
+                </div>
+                <div
+                  style={{
+                    fontSize: "10px",
+                    color: "#8b5cf6",
+                    marginTop: "5px",
+                  }}
+                >
+                  Mouse left → Camera left | Mouse right → Camera right
+                </div>
+                <div
+                  style={{
+                    fontSize: "10px",
+                    color: "#8b5cf6",
+                    marginTop: "3px",
+                  }}
+                >
+                  3: Shift camera left | 4: Shift camera right
+                </div>
               </div>
             )}
           </div>
