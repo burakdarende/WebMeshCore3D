@@ -247,6 +247,7 @@ export function CameraControls({
   const { camera, gl, scene } = useThree();
   const orbitControlsRef = useRef();
   const [isFocusMode, setIsFocusMode] = useState(false); // Track focus manipulation mode
+  const [autoRotateEnabled, setAutoRotateEnabled] = useState(false); // Auto rotate state
 
   // FOV/Zoom state for both camera types
   const [fovValue, setFovValue] = useState(() => {
@@ -394,6 +395,36 @@ export function CameraControls({
     }
   }, [target]);
 
+  // Setup global camera controls
+  useEffect(() => {
+    window.cameraControls = {
+      setAutoRotate: (enabled, speed = 2.0, direction = "right") => {
+        setAutoRotateEnabled(enabled);
+
+        // Update OrbitControls with new settings
+        if (orbitControlsRef.current) {
+          orbitControlsRef.current.autoRotate = enabled;
+          // Set speed based on direction (negative for left)
+          orbitControlsRef.current.autoRotateSpeed =
+            direction === "left" ? -speed : speed;
+        }
+
+        console.log(
+          `📷 Auto rotate ${
+            enabled ? "enabled" : "disabled"
+          } - Speed: ${speed} - Direction: ${direction}`
+        );
+      },
+    };
+
+    return () => {
+      // Cleanup
+      if (window.cameraControls) {
+        delete window.cameraControls;
+      }
+    };
+  }, []);
+
   // Update camera debug data in real-time
   useFrame(() => {
     if (isDebugMode) {
@@ -422,6 +453,8 @@ export function CameraControls({
         enableZoom={!isFocusMode}
         enablePan={!isFocusMode}
         enableRotate={!isFocusMode}
+        autoRotate={autoRotateEnabled}
+        autoRotateSpeed={2.0}
         maxDistance={CAMERA_CONFIG.maxDistance}
         minDistance={CAMERA_CONFIG.minDistance}
         maxPolarAngle={CAMERA_CONFIG.maxPolarAngle}
