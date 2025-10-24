@@ -247,11 +247,21 @@ export function CameraControls({
   const { camera, gl, scene } = useThree();
   const orbitControlsRef = useRef();
   const [isFocusMode, setIsFocusMode] = useState(false); // Track focus manipulation mode
-  const [autoRotateEnabled, setAutoRotateEnabled] = useState(false); // Auto rotate state
-  const [cameraLocked, setCameraLocked] = useState(false); // Camera lock state
-  const [mouseTrackingEnabled, setMouseTrackingEnabled] = useState(false); // Mouse tracking state
-  const [mouseTrackingIntensity, setMouseTrackingIntensity] = useState(1.0); // Mouse tracking intensity
-  const mouseTrackingIntensityRef = useRef(1.0); // Ref for intensity to avoid useEffect restart
+  const [autoRotateEnabled, setAutoRotateEnabled] = useState(
+    CAMERA_CONFIG.autoRotate?.enabled || false
+  ); // Auto rotate state
+  const [cameraLocked, setCameraLocked] = useState(
+    CAMERA_CONFIG.cameraLock?.enabled || false
+  ); // Camera lock state
+  const [mouseTrackingEnabled, setMouseTrackingEnabled] = useState(
+    CAMERA_CONFIG.mouseTracking?.enabled || false
+  ); // Mouse tracking state
+  const [mouseTrackingIntensity, setMouseTrackingIntensity] = useState(
+    CAMERA_CONFIG.mouseTracking?.intensity?.default || 1.0
+  ); // Mouse tracking intensity
+  const mouseTrackingIntensityRef = useRef(
+    CAMERA_CONFIG.mouseTracking?.intensity?.default || 1.0
+  ); // Ref for intensity to avoid useEffect restart
 
   // FOV/Zoom state for both camera types
   const [fovValue, setFovValue] = useState(() => {
@@ -404,8 +414,8 @@ export function CameraControls({
     // Store current state
     let currentAutoRotateState = {
       enabled: autoRotateEnabled,
-      speed: 2.0,
-      direction: "right",
+      speed: CAMERA_CONFIG.autoRotate?.speed?.default || 2.0,
+      direction: CAMERA_CONFIG.autoRotate?.direction?.default || "right",
     };
 
     let currentCameraLocked = cameraLocked;
@@ -415,7 +425,11 @@ export function CameraControls({
     };
 
     window.cameraControls = {
-      setAutoRotate: (enabled, speed = 2.0, direction = "right") => {
+      setAutoRotate: (
+        enabled,
+        speed = CAMERA_CONFIG.autoRotate?.speed?.default || 2.0,
+        direction = CAMERA_CONFIG.autoRotate?.direction?.default || "right"
+      ) => {
         setAutoRotateEnabled(enabled);
 
         // Update stored state
@@ -519,9 +533,13 @@ export function CameraControls({
       lastMouseX = currentMouseX;
 
       // Only rotate if there's significant mouse movement
-      if (Math.abs(mouseDelta) > 0.001) {
-        // Use current intensity from ref to avoid useEffect restart
-        const mouseTrackingSpeed = 0.3 * mouseTrackingIntensityRef.current;
+      const threshold =
+        CAMERA_CONFIG.mouseTracking?.sensitivity?.threshold || 0.001;
+      if (Math.abs(mouseDelta) > threshold) {
+        // Use current intensity from ref and config values
+        const baseSpeed = CAMERA_CONFIG.mouseTracking?.speed?.base || 0.1;
+        const mouseTrackingSpeed =
+          baseSpeed * mouseTrackingIntensityRef.current;
 
         // Mouse right (+) -> Camera rotates right (positive azimuth)
         // Mouse left (-) -> Camera rotates left (negative azimuth)
@@ -544,14 +562,18 @@ export function CameraControls({
       }
     };
 
-    // Camera position shift with 3 and 4 keys when mouse tracking is active
+    // Camera position shift with configured keys when mouse tracking is active
     const handleKeyDown = (event) => {
       if (!mouseTrackingEnabled || cameraLocked || !orbitControlsRef.current)
         return;
 
-      const shiftStep = 0.5; // Distance to shift camera position
+      const shiftStep = CAMERA_CONFIG.mouseTracking?.positionShift?.step || 0.5;
+      const leftKey =
+        CAMERA_CONFIG.mouseTracking?.positionShift?.keys?.left || "3";
+      const rightKey =
+        CAMERA_CONFIG.mouseTracking?.positionShift?.keys?.right || "4";
 
-      if (event.key === "3") {
+      if (event.key === leftKey) {
         // Shift camera position to the left
         const leftVector = new THREE.Vector3();
         orbitControlsRef.current.object.getWorldDirection(leftVector);
@@ -561,7 +583,7 @@ export function CameraControls({
           leftVector.multiplyScalar(-shiftStep)
         );
         console.log("📷 Camera shifted left");
-      } else if (event.key === "4") {
+      } else if (event.key === rightKey) {
         // Shift camera position to the right
         const rightVector = new THREE.Vector3();
         orbitControlsRef.current.object.getWorldDirection(rightVector);

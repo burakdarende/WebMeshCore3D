@@ -4,17 +4,30 @@
 
 import React, { useState, useEffect } from "react";
 import { useDebugUIPosition } from "./UILayoutManager";
+import { CAMERA_CONFIG } from "../../config/app-config";
 
 // External UI Components (Completely Fixed, Outside Canvas)
 export function CameraDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
   // Don't use local state - use window data directly
   const [windowData, setWindowData] = useState(null);
-  const [autoRotate, setAutoRotate] = useState(false);
-  const [autoRotateSpeed, setAutoRotateSpeed] = useState(2.0);
-  const [autoRotateDirection, setAutoRotateDirection] = useState("right");
-  const [cameraLocked, setCameraLocked] = useState(false);
-  const [mouseTracking, setMouseTracking] = useState(false);
-  const [mouseTrackingIntensity, setMouseTrackingIntensity] = useState(0.5);
+  const [autoRotate, setAutoRotate] = useState(
+    CAMERA_CONFIG.autoRotate?.enabled || false
+  );
+  const [autoRotateSpeed, setAutoRotateSpeed] = useState(
+    CAMERA_CONFIG.autoRotate?.speed?.default || 2.0
+  );
+  const [autoRotateDirection, setAutoRotateDirection] = useState(
+    CAMERA_CONFIG.autoRotate?.direction?.default || "right"
+  );
+  const [cameraLocked, setCameraLocked] = useState(
+    CAMERA_CONFIG.cameraLock?.enabled || false
+  );
+  const [mouseTracking, setMouseTracking] = useState(
+    CAMERA_CONFIG.mouseTracking?.enabled || false
+  );
+  const [mouseTrackingIntensity, setMouseTrackingIntensity] = useState(
+    CAMERA_CONFIG.mouseTracking?.intensity?.default || 1.0
+  );
   const [isMinimized, setIsMinimized] = useState(false);
   const { position, isVisible } = useDebugUIPosition("cameraDebug");
 
@@ -348,9 +361,9 @@ export function CameraDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
                   </label>
                   <input
                     type="range"
-                    min="0.1"
-                    max="5.0"
-                    step="0.1"
+                    min={CAMERA_CONFIG.autoRotate?.speed?.min || 0.1}
+                    max={CAMERA_CONFIG.autoRotate?.speed?.max || 5.0}
+                    step={CAMERA_CONFIG.autoRotate?.speed?.step || 0.1}
                     value={autoRotateSpeed}
                     onChange={handleSpeedChange}
                     style={{
@@ -506,9 +519,9 @@ export function CameraDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
                   </label>
                   <input
                     type="range"
-                    min="0.1"
-                    max="2.0"
-                    step="0.1"
+                    min={CAMERA_CONFIG.mouseTracking?.intensity?.min || 0.1}
+                    max={CAMERA_CONFIG.mouseTracking?.intensity?.max || 2.0}
+                    step={CAMERA_CONFIG.mouseTracking?.intensity?.step || 0.1}
                     value={mouseTrackingIntensity}
                     onChange={handleMouseTrackingIntensityChange}
                     style={{
@@ -536,7 +549,12 @@ export function CameraDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
                     marginTop: "3px",
                   }}
                 >
-                  3: Shift camera left | 4: Shift camera right
+                  {CAMERA_CONFIG.mouseTracking?.positionShift?.keys?.left ||
+                    "3"}
+                  : Shift camera left |{" "}
+                  {CAMERA_CONFIG.mouseTracking?.positionShift?.keys?.right ||
+                    "4"}
+                  : Shift camera right
                 </div>
               </div>
             )}

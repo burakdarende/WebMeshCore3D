@@ -92,6 +92,62 @@ export const CAMERA_CONFIG = {
   minPolarAngle: 0, // Allow full rotation
   enableDamping: true,
   dampingFactor: 0.05,
+
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // 🚀 ADVANCED CAMERA FEATURES
+  // ═══════════════════════════════════════════════════════════════════════════════
+
+  // 🔄 Auto Rotate Settings
+  autoRotate: {
+    enabled: false, // Enable auto rotate by default
+    speed: {
+      default: 2.0, // Default rotation speed
+      min: 0.1, // Minimum speed
+      max: 5.0, // Maximum speed
+      step: 0.1, // Speed adjustment step
+    },
+    direction: {
+      default: "right", // Default direction: "left" or "right"
+      options: ["left", "right"], // Available directions
+    },
+  },
+
+  // 🔒 Camera Lock Settings
+  cameraLock: {
+    enabled: false, // Enable camera lock by default
+    disableControls: true, // Disable OrbitControls when locked
+    showIndicator: true, // Show lock indicator in UI
+  },
+
+  // 🎯 Mouse Tracking Settings
+  mouseTracking: {
+    enabled: false, // Enable mouse tracking by default
+    intensity: {
+      default: 1.0, // Default intensity
+      min: 0.1, // Minimum intensity
+      max: 2.0, // Maximum intensity
+      step: 0.1, // Intensity adjustment step
+    },
+    speed: {
+      base: 0.1, // Base rotation speed multiplier
+      multiplier: 1.0, // Additional speed multiplier
+    },
+    sensitivity: {
+      threshold: 0.001, // Minimum mouse movement to trigger rotation
+      damping: 0.95, // Movement damping for smoothness
+    },
+    // 🎮 Position shifting with keyboard
+    positionShift: {
+      enabled: true, // Enable position shifting with 3 and 4 keys
+      step: 0.5, // Distance to shift camera position
+      keys: {
+        left: "3", // Key to shift camera left
+        right: "4", // Key to shift camera right
+      },
+    },
+    // 🚫 Disable OrbitControls when mouse tracking is active
+    disableOrbitControls: true, // Disable zoom, pan, rotate when mouse tracking is on
+  },
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
