@@ -29,10 +29,32 @@ WebMeshCore3D is an enterprise-grade 3D scene framework designed for production 
 #### 📷 Professional Camera System
 
 - **Dual projection support** - Perspective & Orthographic
+- **Advanced camera controls** - Auto rotate, Camera lock, Mouse tracking
 - **Blender-inspired transform workflow** (G + X/Y/Z constraints)
 - **Real-time debug overlay** - for production values
 - **Smooth camera transitions** - enhanced user experience
 - **Configurable control schemes** - multiple usage scenarios
+- **Centralized configuration** - all camera settings in app-config.js
+
+##### 🔄 Auto Rotate Features
+
+- **Variable speed control** - configurable rotation speed (0.1-5.0)
+- **Direction selection** - left/right rotation with radio buttons
+- **Smart conflict prevention** - mutually exclusive with other camera modes
+
+##### 🔒 Camera Lock System
+
+- **Complete camera control lock** - prevents all camera movements
+- **Visual indicators** - clear UI feedback for lock state
+- **OrbitControls integration** - seamlessly disables zoom/pan/rotate
+
+##### 🎯 Mouse Tracking System
+
+- **Real-time mouse following** - camera responds to mouse position
+- **Intensity control** - adjustable tracking sensitivity (0.1-2.0)
+- **Position shifting** - 3/4 keys for camera repositioning
+- **Delta-based movement** - smooth, non-continuous rotation
+- **Smart controls disable** - prevents conflict with manual camera control
 
 #### ⚡ Performance-First Architecture
 
@@ -50,13 +72,24 @@ WebMeshCore3D is an enterprise-grade 3D scene framework designed for production 
 - **Type-safe parameters** - error prevention
 - **Backward compatibility** - for existing projects
 
-#### �️ Advanced Debug Interface
+#### 🛠️ Advanced Debug Interface
 
 - **Responsive UI layout system** - all screen sizes
 - **Multiple debug panels** - Camera, Bloom, Lighting, Collider
 - **H-key toggle system** - quick debug mode
 - **Real-time parameter updates** - live adjustments
 - **Clean production builds** - zero debug residue
+- **Minimize/Maximize panels** - optimized workspace management
+- **Glass morphism styling** - modern UI aesthetics
+
+##### 📷 Camera Debug Panel Features:
+
+- **Auto Rotate Controls**: Speed slider (0.1-5.0) and direction radio buttons
+- **Camera Lock Toggle**: Complete camera movement prevention
+- **Mouse Tracking System**: Real-time mouse-responsive rotation with intensity control
+- **Position Indicators**: Real-time camera position and target coordinates
+- **FOV/Zoom Controls**: Live field of view and zoom adjustments
+- **Camera Type Switcher**: Perspective/Orthographic toggle
 
 ### 🚀 Technical Installation
 
@@ -154,6 +187,47 @@ export const CAMERA_CONFIG = {
     perspective: { default: 50 }, // Field of view
     orthographic: { default: 1.7 }, // Orthographic zoom
   },
+
+  // 🚀 Advanced Camera Features
+  autoRotate: {
+    enabled: false, // Enable auto rotate by default
+    speed: {
+      default: 2.0, // Default rotation speed
+      min: 0.1,
+      max: 5.0,
+      step: 0.1, // Speed range settings
+    },
+    direction: {
+      default: "right", // Default direction
+      options: ["left", "right"], // Available directions
+    },
+  },
+
+  cameraLock: {
+    enabled: false, // Enable camera lock by default
+    disableControls: true, // Disable OrbitControls when locked
+    showIndicator: true, // Show lock indicator in UI
+  },
+
+  mouseTracking: {
+    enabled: false, // Enable mouse tracking by default
+    intensity: {
+      default: 1.0, // Default intensity
+      min: 0.1,
+      max: 2.0,
+      step: 0.1, // Intensity range
+    },
+    speed: {
+      base: 0.1, // Base rotation speed multiplier
+      multiplier: 1.0, // Additional speed multiplier
+    },
+    positionShift: {
+      enabled: true, // Enable position shifting
+      step: 0.5, // Distance to shift camera position
+      keys: { left: "3", right: "4" }, // Keyboard keys
+    },
+    disableOrbitControls: true, // Disable zoom/pan/rotate when active
+  },
 };
 ```
 
@@ -176,12 +250,45 @@ export const PERFORMANCE_CONFIG = {
 3. Use **G + X/Y/Z** for focus point adjustment
 4. **C** key switches camera type
 5. **H** key toggles debug panels visibility
+
+#### 🎮 Advanced Camera Controls:
+
+- **Auto Rotate**: Toggle continuous camera rotation with speed/direction control
+- **Camera Lock**: Lock all camera movements for stable viewing
+- **Mouse Tracking**: Enable mouse-responsive camera rotation
+  - **3/4 keys**: Shift camera position left/right when mouse tracking is active
+  - **Intensity slider**: Adjust mouse tracking sensitivity
+- **Mutual Exclusion**: Camera features prevent conflicts automatically
+
 6. Copy values from debug UI after finding perfect composition
 7. Update config file for production deployment
 
 ---
 
-## 🛠️ Technical Stack
+## � System Requirements
+
+### Minimum Requirements:
+
+- **Browser**: Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
+- **WebGL**: 2.0 support required
+- **Memory**: 4GB RAM minimum for complex scenes
+- **GPU**: Integrated graphics sufficient for basic scenes
+
+### Recommended for Advanced Features:
+
+- **GPU**: Dedicated graphics card for complex bloom effects
+- **Memory**: 8GB+ RAM for large scenes with mouse tracking
+- **CPU**: Multi-core processor for smooth auto-rotate animations
+- **Network**: Stable connection for asset loading
+
+### Browser Feature Support:
+
+- **Mouse Tracking**: Requires modern pointer events API
+- **Auto Rotate**: Uses requestAnimationFrame for smooth animation
+- **Camera Lock**: Relies on modern event handling
+- **Debug Panels**: Requires modern CSS grid and flexbox support
+
+## �🛠️ Technical Stack
 
 - **Next.js 14.2.5** - React production framework
 - **Three.js 0.157.0** - WebGL 3D graphics engine
@@ -309,5 +416,10 @@ If this framework helps your projects, consider:
 - **Production-Tested** - Used in real-world applications
 - **Comprehensive Documentation** - Everything you need to get started
 - **Active Maintenance** - Regular updates and improvements
+- **Advanced Camera System** - Professional-grade camera controls with auto-rotate, lock, and mouse tracking
+- **Centralized Configuration** - Single config file controls entire system
+- **Modern UI Components** - Glass morphism debug panels with minimize/maximize
+- **Mutual Exclusion Logic** - Smart feature conflict prevention
+- **Real-time Parameter Control** - Live adjustments without code changes
 
 _Built with precision engineering for the modern web_
