@@ -2,7 +2,8 @@
 
 Professional-grade 3D visualization system built for real-world applications. Engineered as a comprehensive alternative to commercial solutions with full developer control.
 
-## 🇬🇧 English
+> **⚠️ SECURITY DISCLAIMER**  
+> This project has been developed with AI assistance. No security guarantees are provided. Users should conduct thorough security audits and testing before deploying in production environments. Use at your own risk.
 
 ### 📖 Overview
 
