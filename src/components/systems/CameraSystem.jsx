@@ -248,6 +248,7 @@ export function CameraControls({
   const orbitControlsRef = useRef();
   const [isFocusMode, setIsFocusMode] = useState(false); // Track focus manipulation mode
   const [autoRotateEnabled, setAutoRotateEnabled] = useState(false); // Auto rotate state
+  const [cameraLocked, setCameraLocked] = useState(false); // Camera lock state
 
   // FOV/Zoom state for both camera types
   const [fovValue, setFovValue] = useState(() => {
@@ -397,9 +398,21 @@ export function CameraControls({
 
   // Setup global camera controls
   useEffect(() => {
+    // Store current state
+    let currentAutoRotateState = {
+      enabled: autoRotateEnabled,
+      speed: 2.0,
+      direction: "right",
+    };
+
+    let currentCameraLocked = cameraLocked;
+
     window.cameraControls = {
       setAutoRotate: (enabled, speed = 2.0, direction = "right") => {
         setAutoRotateEnabled(enabled);
+
+        // Update stored state
+        currentAutoRotateState = { enabled, speed, direction };
 
         // Update OrbitControls with new settings
         if (orbitControlsRef.current) {
@@ -414,6 +427,23 @@ export function CameraControls({
             enabled ? "enabled" : "disabled"
           } - Speed: ${speed} - Direction: ${direction}`
         );
+      },
+      getAutoRotateState: () => {
+        return { ...currentAutoRotateState };
+      },
+      setCameraLock: (locked) => {
+        setCameraLocked(locked);
+        currentCameraLocked = locked;
+
+        // Update OrbitControls
+        if (orbitControlsRef.current) {
+          orbitControlsRef.current.enabled = !locked;
+        }
+
+        console.log(`📷 Camera ${locked ? "locked" : "unlocked"}`);
+      },
+      getCameraLockState: () => {
+        return currentCameraLocked;
       },
     };
 
@@ -450,9 +480,9 @@ export function CameraControls({
         ref={orbitControlsRef}
         enableDamping={CAMERA_CONFIG.enableDamping}
         dampingFactor={CAMERA_CONFIG.dampingFactor}
-        enableZoom={!isFocusMode}
-        enablePan={!isFocusMode}
-        enableRotate={!isFocusMode}
+        enableZoom={!isFocusMode && !cameraLocked}
+        enablePan={!isFocusMode && !cameraLocked}
+        enableRotate={!isFocusMode && !cameraLocked}
         autoRotate={autoRotateEnabled}
         autoRotateSpeed={2.0}
         maxDistance={CAMERA_CONFIG.maxDistance}

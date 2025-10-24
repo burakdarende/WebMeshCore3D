@@ -21,6 +21,7 @@ export function BloomDebugUI({
     setBloomParams: null,
   }));
 
+  const [isMinimized, setIsMinimized] = useState(false);
   const { position, isVisible } = useDebugUIPosition("bloomDebug");
 
   // Poll bloom data from window object
@@ -86,98 +87,124 @@ export function BloomDebugUI({
           color: `${DEBUG_UI_CONFIG.panels.BLOOM_DEBUG.color}`,
           fontWeight: "bold",
           marginBottom: "15px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
-        {DEBUG_UI_CONFIG.panels.BLOOM_DEBUG.icon} BLOOM DEBUG
-      </div>
-
-      <div style={{ marginBottom: "15px" }}>
-        <label style={{ display: "block", marginBottom: "5px" }}>
-          Threshold: {bloomParams.threshold?.toFixed(3) || "0.100"}
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.001" // Much more precise (0.1% steps)
-          value={bloomParams.threshold || 0.1}
-          onChange={(e) =>
-            setBloomParams &&
-            setBloomParams((prev) => ({
-              ...prev,
-              threshold: parseFloat(e.target.value),
-            }))
+        <span>{DEBUG_UI_CONFIG.panels.BLOOM_DEBUG.icon} BLOOM DEBUG</span>
+        <button
+          onClick={() => setIsMinimized(!isMinimized)}
+          style={{
+            background: "none",
+            border: "none",
+            color: `${DEBUG_UI_CONFIG.panels.BLOOM_DEBUG.color}`,
+            cursor: "pointer",
+            fontSize: "14px",
+            padding: "2px 6px",
+            borderRadius: "3px",
+            transition: "background-color 0.2s",
+          }}
+          onMouseEnter={(e) =>
+            (e.target.style.backgroundColor = "rgba(255,255,0,0.1)")
           }
-          style={{ width: "100%" }}
-        />
+          onMouseLeave={(e) => (e.target.style.backgroundColor = "transparent")}
+        >
+          {isMinimized ? "+" : "−"}
+        </button>
       </div>
 
-      <div style={{ marginBottom: "15px" }}>
-        <label style={{ display: "block", marginBottom: "5px" }}>
-          Strength: {bloomParams.strength?.toFixed(3) || "0.000"}
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="3"
-          step="0.01" // More precise (1% steps instead of 10%)
-          value={bloomParams.strength || 0.0}
-          onChange={(e) =>
-            setBloomParams &&
-            setBloomParams((prev) => ({
-              ...prev,
-              strength: parseFloat(e.target.value),
-            }))
-          }
-          style={{ width: "100%" }}
-        />
-      </div>
+      {!isMinimized && (
+        <>
+          <div style={{ marginBottom: "15px" }}>
+            <label style={{ display: "block", marginBottom: "5px" }}>
+              Threshold: {bloomParams.threshold?.toFixed(3) || "0.100"}
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.001" // Much more precise (0.1% steps)
+              value={bloomParams.threshold || 0.1}
+              onChange={(e) =>
+                setBloomParams &&
+                setBloomParams((prev) => ({
+                  ...prev,
+                  threshold: parseFloat(e.target.value),
+                }))
+              }
+              style={{ width: "100%" }}
+            />
+          </div>
 
-      <div style={{ marginBottom: "15px" }}>
-        <label style={{ display: "block", marginBottom: "5px" }}>
-          Radius: {bloomParams.radius?.toFixed(3) || "0.220"}
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.001" // Much more precise (0.1% steps)
-          value={bloomParams.radius || 0.22}
-          onChange={(e) =>
-            setBloomParams &&
-            setBloomParams((prev) => ({
-              ...prev,
-              radius: parseFloat(e.target.value),
-            }))
-          }
-          style={{ width: "100%" }}
-        />
-      </div>
+          <div style={{ marginBottom: "15px" }}>
+            <label style={{ display: "block", marginBottom: "5px" }}>
+              Strength: {bloomParams.strength?.toFixed(3) || "0.000"}
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="3"
+              step="0.01" // More precise (1% steps instead of 10%)
+              value={bloomParams.strength || 0.0}
+              onChange={(e) =>
+                setBloomParams &&
+                setBloomParams((prev) => ({
+                  ...prev,
+                  strength: parseFloat(e.target.value),
+                }))
+              }
+              style={{ width: "100%" }}
+            />
+          </div>
 
-      <div style={{ marginBottom: "15px" }}>
-        <label style={{ display: "block", marginBottom: "5px" }}>
-          Exposure: {bloomParams.exposure?.toFixed(3) || "1.000"}
-        </label>
-        <input
-          type="range"
-          min="0.1"
-          max="2"
-          step="0.01" // More precise (1% steps instead of 10%)
-          value={bloomParams.exposure || 1.0}
-          onChange={(e) =>
-            setBloomParams &&
-            setBloomParams((prev) => ({
-              ...prev,
-              exposure: parseFloat(e.target.value),
-            }))
-          }
-          style={{ width: "100%" }}
-        />
-      </div>
+          <div style={{ marginBottom: "15px" }}>
+            <label style={{ display: "block", marginBottom: "5px" }}>
+              Radius: {bloomParams.radius?.toFixed(3) || "0.220"}
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.001" // Much more precise (0.1% steps)
+              value={bloomParams.radius || 0.22}
+              onChange={(e) =>
+                setBloomParams &&
+                setBloomParams((prev) => ({
+                  ...prev,
+                  radius: parseFloat(e.target.value),
+                }))
+              }
+              style={{ width: "100%" }}
+            />
+          </div>
 
-      <div style={{ fontSize: "10px", color: "#888", marginTop: "10px" }}>
-        🎯 Emissive materials auto-bloom | 🌟 25% random objects for testing
-      </div>
+          <div style={{ marginBottom: "15px" }}>
+            <label style={{ display: "block", marginBottom: "5px" }}>
+              Exposure: {bloomParams.exposure?.toFixed(3) || "1.000"}
+            </label>
+            <input
+              type="range"
+              min="0.1"
+              max="2"
+              step="0.01" // More precise (1% steps instead of 10%)
+              value={bloomParams.exposure || 1.0}
+              onChange={(e) =>
+                setBloomParams &&
+                setBloomParams((prev) => ({
+                  ...prev,
+                  exposure: parseFloat(e.target.value),
+                }))
+              }
+              style={{ width: "100%" }}
+            />
+          </div>
+
+          <div style={{ fontSize: "10px", color: "#888", marginTop: "10px" }}>
+            🎯 Emissive materials auto-bloom | 🌟 25% random objects for testing
+          </div>
+        </>
+      )}
     </div>
   );
 }

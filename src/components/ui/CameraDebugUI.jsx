@@ -12,6 +12,7 @@ export function CameraDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
   const [autoRotate, setAutoRotate] = useState(false);
   const [autoRotateSpeed, setAutoRotateSpeed] = useState(2.0);
   const [autoRotateDirection, setAutoRotateDirection] = useState("right");
+  const [cameraLocked, setCameraLocked] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const { position, isVisible } = useDebugUIPosition("cameraDebug");
 
@@ -21,6 +22,20 @@ export function CameraDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
       if (window.cameraDebugData) {
         setWindowData(window.cameraDebugData);
       }
+
+      // Sync auto rotate state from camera system
+      if (window.cameraControls && window.cameraControls.getAutoRotateState) {
+        const state = window.cameraControls.getAutoRotateState();
+        setAutoRotate(state.enabled);
+        setAutoRotateSpeed(state.speed);
+        setAutoRotateDirection(state.direction);
+      }
+
+      // Sync camera lock state from camera system
+      if (window.cameraControls && window.cameraControls.getCameraLockState) {
+        const lockState = window.cameraControls.getCameraLockState();
+        setCameraLocked(lockState);
+      }
     }, 100); // Update every 100ms
 
     return () => clearInterval(interval);
@@ -29,6 +44,13 @@ export function CameraDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
   // Handle auto rotate toggle
   const handleAutoRotateChange = (e) => {
     const enabled = e.target.checked;
+
+    // If trying to enable auto rotate while camera is locked, prevent it
+    if (enabled && cameraLocked) {
+      console.log("📷 Cannot enable auto rotate while camera is locked");
+      return;
+    }
+
     setAutoRotate(enabled);
 
     // Send auto rotate setting to camera system
@@ -68,6 +90,30 @@ export function CameraDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
         direction
       );
     }
+  };
+
+  // Handle camera lock toggle
+  const handleCameraLockChange = (e) => {
+    const locked = e.target.checked;
+    setCameraLocked(locked);
+
+    // If camera lock is enabled, disable auto rotate
+    if (locked && autoRotate) {
+      setAutoRotate(false);
+      if (window.cameraControls) {
+        window.cameraControls.setAutoRotate(
+          false,
+          autoRotateSpeed,
+          autoRotateDirection
+        );
+      }
+    }
+
+    if (window.cameraControls) {
+      window.cameraControls.setCameraLock(locked);
+    }
+
+    console.log(`📷 Camera ${locked ? "locked" : "unlocked"}`);
   };
 
   if (
@@ -190,22 +236,25 @@ export function CameraDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
               style={{
                 display: "flex",
                 alignItems: "center",
-                cursor: "pointer",
+                cursor: cameraLocked ? "not-allowed" : "pointer",
+                opacity: cameraLocked ? 0.5 : 1,
               }}
             >
               <input
                 type="checkbox"
                 checked={autoRotate}
                 onChange={handleAutoRotateChange}
+                disabled={cameraLocked}
                 style={{ marginRight: "8px" }}
               />
               <span style={{ color: autoRotate ? "#4ade80" : "#ffffff" }}>
-                🔄 Auto Rotate
+                🔄 Auto Rotate{" "}
+                {cameraLocked ? "(Disabled - Camera Locked)" : ""}
               </span>
             </label>
 
             {/* Auto Rotate Settings */}
-            {autoRotate && (
+            {autoRotate && !cameraLocked && (
               <div style={{ marginTop: "10px", marginLeft: "20px" }}>
                 {/* Speed Control */}
                 <div style={{ marginBottom: "8px" }}>
@@ -287,6 +336,45 @@ export function CameraDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
                     </label>
                   </div>
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* Camera Lock Control */}
+          <div
+            style={{
+              marginBottom: "10px",
+              paddingTop: "5px",
+              borderTop: "1px solid #333",
+            }}
+          >
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={cameraLocked}
+                onChange={handleCameraLockChange}
+                style={{ marginRight: "8px" }}
+              />
+              <span style={{ color: cameraLocked ? "#f87171" : "#ffffff" }}>
+                🔒 Camera Lock
+              </span>
+            </label>
+            {cameraLocked && (
+              <div
+                style={{
+                  marginTop: "5px",
+                  marginLeft: "20px",
+                  fontSize: "10px",
+                  color: "#f87171",
+                }}
+              >
+                Camera controls disabled
               </div>
             )}
           </div>

@@ -10,6 +10,7 @@ import { useDebugUIPosition } from "./UILayoutManager";
 export function LightingDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
   // Don't use local state - use window data directly
   const [windowData, setWindowData] = useState(null);
+  const [isMinimized, setIsMinimized] = useState(false);
   const { position, isVisible } = useDebugUIPosition("lightingDebug");
 
   // Poll lighting data from window object
@@ -81,82 +82,114 @@ export function LightingDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
           color: `${DEBUG_UI_CONFIG.panels.LIGHTING_DEBUG.color}`,
           fontWeight: "bold",
           marginBottom: "15px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
-        {DEBUG_UI_CONFIG.panels.LIGHTING_DEBUG.icon} LIGHTING DEBUG
-      </div>
-
-      <div style={{ marginBottom: "15px" }}>
-        <label style={{ display: "block", marginBottom: "5px" }}>
-          Ambient: {windowData.ambientIntensity.toFixed(2)}
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="2"
-          step="0.1"
-          value={windowData.ambientIntensity}
-          onChange={(e) =>
-            updateLighting({ ambientIntensity: parseFloat(e.target.value) })
+        <span>{DEBUG_UI_CONFIG.panels.LIGHTING_DEBUG.icon} LIGHTING DEBUG</span>
+        <button
+          onClick={() => setIsMinimized(!isMinimized)}
+          style={{
+            background: "none",
+            border: "none",
+            color: `${DEBUG_UI_CONFIG.panels.LIGHTING_DEBUG.color}`,
+            cursor: "pointer",
+            fontSize: "14px",
+            padding: "2px 6px",
+            borderRadius: "3px",
+            transition: "background-color 0.2s",
+          }}
+          onMouseEnter={(e) =>
+            (e.target.style.backgroundColor = "rgba(0,255,255,0.1)")
           }
-          style={{ width: "100%" }}
-        />
+          onMouseLeave={(e) => (e.target.style.backgroundColor = "transparent")}
+        >
+          {isMinimized ? "+" : "−"}
+        </button>
       </div>
 
-      <div style={{ marginBottom: "15px" }}>
-        <label style={{ display: "block", marginBottom: "5px" }}>
-          Key Light: {windowData.keyLightIntensity.toFixed(2)}
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="5"
-          step="0.1"
-          value={windowData.keyLightIntensity}
-          onChange={(e) =>
-            updateLighting({ keyLightIntensity: parseFloat(e.target.value) })
-          }
-          style={{ width: "100%" }}
-        />
-      </div>
+      {!isMinimized && (
+        <>
+          <div style={{ marginBottom: "15px" }}>
+            <label style={{ display: "block", marginBottom: "5px" }}>
+              Ambient: {windowData.ambientIntensity.toFixed(2)}
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="2"
+              step="0.1"
+              value={windowData.ambientIntensity}
+              onChange={(e) =>
+                updateLighting({ ambientIntensity: parseFloat(e.target.value) })
+              }
+              style={{ width: "100%" }}
+            />
+          </div>
 
-      <div style={{ marginBottom: "15px" }}>
-        <label style={{ display: "block", marginBottom: "5px" }}>
-          Fill Light: {windowData.fillLightIntensity.toFixed(2)}
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="3"
-          step="0.1"
-          value={windowData.fillLightIntensity}
-          onChange={(e) =>
-            updateLighting({ fillLightIntensity: parseFloat(e.target.value) })
-          }
-          style={{ width: "100%" }}
-        />
-      </div>
+          <div style={{ marginBottom: "15px" }}>
+            <label style={{ display: "block", marginBottom: "5px" }}>
+              Key Light: {windowData.keyLightIntensity.toFixed(2)}
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="5"
+              step="0.1"
+              value={windowData.keyLightIntensity}
+              onChange={(e) =>
+                updateLighting({
+                  keyLightIntensity: parseFloat(e.target.value),
+                })
+              }
+              style={{ width: "100%" }}
+            />
+          </div>
 
-      <div style={{ marginBottom: "15px" }}>
-        <label style={{ display: "block", marginBottom: "5px" }}>
-          Rim Light: {windowData.rimLightIntensity.toFixed(2)}
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="4"
-          step="0.1"
-          value={windowData.rimLightIntensity}
-          onChange={(e) =>
-            updateLighting({ rimLightIntensity: parseFloat(e.target.value) })
-          }
-          style={{ width: "100%" }}
-        />
-      </div>
+          <div style={{ marginBottom: "15px" }}>
+            <label style={{ display: "block", marginBottom: "5px" }}>
+              Fill Light: {windowData.fillLightIntensity.toFixed(2)}
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="3"
+              step="0.1"
+              value={windowData.fillLightIntensity}
+              onChange={(e) =>
+                updateLighting({
+                  fillLightIntensity: parseFloat(e.target.value),
+                })
+              }
+              style={{ width: "100%" }}
+            />
+          </div>
 
-      <div style={{ fontSize: "10px", color: "#888", marginTop: "10px" }}>
-        💡 Real-time lighting control | ⚡ Performance optimized
-      </div>
+          <div style={{ marginBottom: "15px" }}>
+            <label style={{ display: "block", marginBottom: "5px" }}>
+              Rim Light: {windowData.rimLightIntensity.toFixed(2)}
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="4"
+              step="0.1"
+              value={windowData.rimLightIntensity}
+              onChange={(e) =>
+                updateLighting({
+                  rimLightIntensity: parseFloat(e.target.value),
+                })
+              }
+              style={{ width: "100%" }}
+            />
+          </div>
+
+          <div style={{ fontSize: "10px", color: "#888", marginTop: "10px" }}>
+            💡 Real-time lighting control | ⚡ Performance optimized
+          </div>
+        </>
+      )}
     </div>
   );
 }
