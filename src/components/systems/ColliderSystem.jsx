@@ -31,6 +31,7 @@ function Collider({
   onLinkClick,
   enableDev = true,
   debugPanelsVisible = true,
+  helpersVisible = true,
 }) {
   const meshRef = useRef();
   const handlesRef = useRef([]);
@@ -348,6 +349,7 @@ function Collider({
         onPointerEnter={handlePointerEnter}
         onPointerLeave={handlePointerLeave}
         renderOrder={999}
+        visible={helpersVisible}
       >
         <boxGeometry args={[1, 1, 1]} />
         <meshBasicMaterial
@@ -363,9 +365,11 @@ function Collider({
       </mesh>
 
       {/* Axis constraint indicator */}
-      {enableDev && debugPanelsVisible && isDragging && constraintAxis && (
-        <AxisConstraintIndicator axis={constraintAxis} />
-      )}
+      {enableDev &&
+        debugPanelsVisible &&
+        helpersVisible &&
+        isDragging &&
+        constraintAxis && <AxisConstraintIndicator axis={constraintAxis} />}
     </group>
   );
 }
@@ -429,6 +433,7 @@ export function ColliderSystem({
   onSelectCollider,
   enableDev = true,
   debugPanelsVisible = true,
+  helpersVisible = true,
 }) {
   const [hoveredCollider, setHoveredCollider] = useState(null);
 
@@ -468,6 +473,7 @@ export function ColliderSystem({
           onLinkClick={handleLinkClick}
           enableDev={enableDev}
           debugPanelsVisible={debugPanelsVisible}
+          helpersVisible={helpersVisible}
         />
       ))}
     </>

@@ -30,13 +30,39 @@ export function PostProcessingEffect() {
   const { gl, scene, camera, size } = useThree();
   const [isEnabled, setIsEnabled] = useState(true);
 
-  // Persistent bloom parameters - don't reset when dependencies change
-  const [bloomParams, setBloomParams] = useState(() => ({
-    threshold: VISUAL_CONFIG.bloom.threshold,
-    strength: VISUAL_CONFIG.bloom.strength,
-    radius: VISUAL_CONFIG.bloom.radius,
-    exposure: VISUAL_CONFIG.bloom.exposure,
-  }));
+  // Persistent bloom parameters with localStorage support
+  const getInitialBloomParams = () => {
+    try {
+      const saved = localStorage.getItem("webmesh-bloom-settings");
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (error) {
+      console.warn("Failed to load bloom settings from localStorage:", error);
+    }
+
+    // Default values from config
+    return {
+      threshold: VISUAL_CONFIG.bloom.threshold,
+      strength: VISUAL_CONFIG.bloom.strength,
+      radius: VISUAL_CONFIG.bloom.radius,
+      exposure: VISUAL_CONFIG.bloom.exposure,
+    };
+  };
+
+  const [bloomParams, setBloomParams] = useState(getInitialBloomParams);
+
+  // Save bloom settings to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "webmesh-bloom-settings",
+        JSON.stringify(bloomParams)
+      );
+    } catch (error) {
+      console.warn("Failed to save bloom settings to localStorage:", error);
+    }
+  }, [bloomParams]);
 
   const bloomComposer = useRef();
   const finalComposer = useRef();

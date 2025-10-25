@@ -130,7 +130,7 @@ export const UILayoutManager = ({ children, DEVELOPER_CONFIG }) => {
           <div style={{ color: "#ffffff" }}>
             Press{" "}
             <span style={{ color: "#ffff00", fontWeight: "bold" }}>H</span> to
-            toggle UI panels
+            toggle UI & Wireframe
           </div>
         </div>
       )}

@@ -282,4 +282,28 @@ export const UI_STYLES = `
     font-size: 11px;
     margin-left: 8px;
   }
+
+  /* Lighting Debug Panel Özel Scrollbar */
+  .lighting-debug-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .lighting-debug-scroll::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+
+  .lighting-debug-scroll::-webkit-scrollbar-thumb {
+    background: rgba(0, 255, 136, 0.6);
+    border-radius: 3px;
+  }
+
+  .lighting-debug-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 255, 136, 0.8);
+  }
+
+  /* Smooth scrolling */
+  .lighting-debug-scroll {
+    scroll-behavior: smooth;
+  }
 `;

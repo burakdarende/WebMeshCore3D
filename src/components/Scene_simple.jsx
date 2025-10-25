@@ -47,6 +47,7 @@ import {
 import { BloomSystem } from "./systems/BloomSystem";
 import {
   CameraSystem,
+  CameraTypeSwitcher,
   createInitialCamera,
   useCameraTypeSwitcher,
 } from "./systems/CameraSystem";
@@ -507,6 +508,11 @@ export default function Scene() {
     DEVELOPER_CONFIG.ENABLE_DEBUG_MODE
   );
 
+  // Debug helpers and colliders visibility state (wireframes, light helpers)
+  const [debugHelpersVisible, setDebugHelpersVisible] = useState(
+    DEVELOPER_CONFIG.ENABLE_DEBUG_MODE
+  );
+
   // Use camera type switcher from CameraSystem
   const [cameraType, setCameraType] = useCameraTypeSwitcher(
     DEVELOPER_CONFIG,
@@ -517,14 +523,6 @@ export default function Scene() {
       }
     }
   );
-
-  // Consolidated state management - all states in one place
-  const [lightingState, setLightingState] = useState({
-    ambientIntensity: VISUAL_CONFIG.ambientLight.intensity,
-    keyLightIntensity: VISUAL_CONFIG.keyLight.intensity,
-    fillLightIntensity: VISUAL_CONFIG.fillLight.intensity,
-    rimLightIntensity: VISUAL_CONFIG.rimLight.intensity,
-  });
 
   // Camera debug state
   const [cameraData, setCameraData] = useState({
@@ -580,6 +578,13 @@ export default function Scene() {
           console.log(`🎛️ Debug panels ${newState ? "shown" : "hidden"}`);
           return newState;
         });
+        setDebugHelpersVisible((prev) => {
+          const newState = !prev;
+          console.log(
+            `🔧 Debug helpers & wireframes ${newState ? "shown" : "hidden"}`
+          );
+          return newState;
+        });
         event.preventDefault();
       }
     };
@@ -615,7 +620,6 @@ export default function Scene() {
   return (
     <ModalProvider>
       <Canvas
-        key={cameraType} // Force re-render when camera type changes
         camera={createInitialCamera(cameraType)}
         shadows // Enable shadows with optimization
         dpr={[1, 2]} // Responsive device pixel ratio for SSR safety
@@ -663,11 +667,10 @@ export default function Scene() {
         <color attach="background" args={[VISUAL_CONFIG.background]} />
         <Environment preset={VISUAL_CONFIG.environment} background={false} />
         <SoftShadows />
-        {/* Advanced Lighting System with Debug Controls */}
+        {/* Unified Advanced Lighting System */}
         <LightingSystem
-          lightingState={lightingState}
-          setLightingState={setLightingState}
           isDebugMode={DEVELOPER_CONFIG.ENABLE_DEBUG_MODE}
+          helpersVisible={debugHelpersVisible}
         />
 
         <Suspense fallback={<Loader />}>
@@ -697,6 +700,11 @@ export default function Scene() {
           onTargetChange={setSharedTarget}
           cameraType={cameraType}
         />
+        {/* Dynamic Camera Type Switcher - Preserves state during camera changes */}
+        <CameraTypeSwitcher
+          DEVELOPER_CONFIG={DEVELOPER_CONFIG}
+          cameraType={cameraType}
+        />
         {/* Bloom System with PostProcessing and Controls */}
         <BloomSystem
           DEVELOPER_CONFIG={DEVELOPER_CONFIG}
@@ -711,6 +719,7 @@ export default function Scene() {
             onSelectCollider={setSelectedCollider}
             enableDev={DEVELOPER_CONFIG.ENABLE_DEBUG_MODE}
             debugPanelsVisible={debugPanelsVisible}
+            helpersVisible={debugHelpersVisible}
           />
         )}
       </Canvas>
