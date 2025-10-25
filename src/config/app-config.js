@@ -40,10 +40,11 @@ export const DEBUG_UI_CONFIG = {
     CAMERA_DEBUG: { index: 0, color: "#00ff00", icon: "📷" },
     BLOOM_DEBUG: { index: 1, color: "#ff9500", icon: "🌟" },
     LIGHTING_DEBUG: { index: 2, color: "#ffff00", icon: "💡" },
-    COLLIDER_DEBUG: { index: 3, color: "#ff00ff", icon: "🎯" },
+    QUALITY_DEBUG: { index: 3, color: "#00ffff", icon: "⚙️" },
+    COLLIDER_DEBUG: { index: 4, color: "#ff00ff", icon: "🎯" },
     // 🚀 Future panels can be added here:
-    PERFORMANCE_DEBUG: { index: 4, color: "#ff0080", icon: "⚡" },
-    MATERIAL_DEBUG: { index: 5, color: "#00ffff", icon: "🎨" },
+    PERFORMANCE_DEBUG: { index: 5, color: "#ff0080", icon: "⚡" },
+    MATERIAL_DEBUG: { index: 6, color: "#00ffff", icon: "🎨" },
   },
 };
 

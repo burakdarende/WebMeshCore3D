@@ -698,6 +698,14 @@ export function LightingDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
   const [isMinimized, setIsMinimized] = useState(false);
   const { position, isVisible } = useDebugUIPosition("lightingDebug");
 
+  const handleToggleMinimize = () => {
+    const newMinimizedState = !isMinimized;
+    setIsMinimized(newMinimizedState);
+    if (window.setIsLightingMinimized) {
+      window.setIsLightingMinimized(newMinimizedState);
+    }
+  };
+
   // Poll lighting data from window object
   useEffect(() => {
     const interval = setInterval(() => {
@@ -765,7 +773,7 @@ export function LightingDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
       >
         <span>{DEBUG_UI_CONFIG.panels.LIGHTING_DEBUG.icon} LIGHTING DEBUG</span>
         <button
-          onClick={() => setIsMinimized(!isMinimized)}
+          onClick={handleToggleMinimize}
           style={{
             background: "none",
             border: "none",

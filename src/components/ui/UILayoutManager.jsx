@@ -6,6 +6,7 @@ import React, { useState, useEffect, useCallback } from "react";
 
 export const UILayoutManager = ({ children, DEVELOPER_CONFIG }) => {
   const [isUIVisible, setIsUIVisible] = useState(true);
+  const [isLightingMinimized, setIsLightingMinimized] = useState(false);
   const [windowSize, setWindowSize] = useState({
     width: typeof window !== "undefined" ? window.innerWidth : 1920,
     height: typeof window !== "undefined" ? window.innerHeight : 1080,
@@ -40,7 +41,7 @@ export const UILayoutManager = ({ children, DEVELOPER_CONFIG }) => {
   const getUIPositions = () => {
     const margin = 20;
     const panelWidth = 300;
-    const panelHeight = 280; // Approximate height for calculation
+    const lightingPanelHeight = isLightingMinimized ? 50 : 280; // Approximate height for calculation
     const spacing = 20;
 
     // Left column positioning
@@ -81,6 +82,13 @@ export const UILayoutManager = ({ children, DEVELOPER_CONFIG }) => {
         right: margin,
         width: panelWidth,
       },
+
+      // Quality debug - above lighting debug
+      qualityDebug: {
+        bottom: margin + lightingPanelHeight + spacing,
+        right: margin,
+        width: panelWidth,
+      },
     };
   };
 
@@ -90,6 +98,7 @@ export const UILayoutManager = ({ children, DEVELOPER_CONFIG }) => {
   useEffect(() => {
     window.debugUIPositions = positions;
     window.isDebugUIVisible = isUIVisible;
+    window.setIsLightingMinimized = setIsLightingMinimized;
   }, [positions, isUIVisible]);
 
   return (

@@ -68,6 +68,7 @@ import { CameraDebugUI } from "./ui/CameraDebugUI";
 import { BloomDebugUI } from "./ui/BloomDebugUI";
 import { LightingDebugUI } from "./ui/LightingDebugUI";
 import { ColliderDebugUI } from "./ui/ColliderDebugUI";
+import { QualityDebugUI } from "./ui/QualityDebugUI";
 
 // Modal System
 import { ModalProvider } from "./ui/modal/ModalSystem";
@@ -748,6 +749,10 @@ export default function Scene() {
               selectedCollider={selectedCollider}
               onSelectCollider={setSelectedCollider}
               availableAnimations={availableAnimations}
+            />
+            <QualityDebugUI
+              DEVELOPER_CONFIG={DEVELOPER_CONFIG}
+              DEBUG_UI_CONFIG={DEBUG_UI_CONFIG}
             />
           </>
         )}
