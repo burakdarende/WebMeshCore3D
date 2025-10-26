@@ -41,7 +41,7 @@ export const UILayoutManager = ({ children, DEVELOPER_CONFIG }) => {
   const getUIPositions = () => {
     const margin = 20;
     const panelWidth = 300;
-    const lightingPanelHeight = isLightingMinimized ? 50 : 280; // Approximate height for calculation
+    const lightingPanelHeight = isLightingMinimized ? 50 : 720; // Approximate height for calculation
     const spacing = 20;
 
     // Left column positioning
