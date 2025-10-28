@@ -4,16 +4,29 @@
 
 import React, { useState, useEffect } from "react";
 import { useDebugUIPosition } from "./UILayoutManager";
+import { VISUAL_CONFIG } from "../../config/app-config";
 
 export function QualityDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
   const [isMinimized, setIsMinimized] = useState(false);
   const { position, isVisible } = useDebugUIPosition("qualityDebug");
+  const [qualityPreset, setQualityPreset] = useState(
+    VISUAL_CONFIG.qualityPreset
+  );
+  const [qualitySettings, setQualitySettings] = useState(VISUAL_CONFIG.quality);
 
-  if (
-    !DEVELOPER_CONFIG.ENABLE_DEBUG_MODE ||
-    !isVisible ||
-    !position
-  ) {
+  useEffect(() => {
+    setQualitySettings(VISUAL_CONFIG.qualityPresets[qualityPreset]);
+  }, [qualityPreset]);
+
+  const handlePresetChange = (e) => {
+    setQualityPreset(e.target.value);
+  };
+
+  const handleSettingChange = (setting, value) => {
+    setQualitySettings((prev) => ({ ...prev, [setting]: value }));
+  };
+
+  if (!DEVELOPER_CONFIG.ENABLE_DEBUG_MODE || !isVisible || !position) {
     return null;
   }
 
@@ -76,7 +89,67 @@ export function QualityDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
 
       {!isMinimized && (
         <div>
-          <p>Quality settings will be here.</p>
+          <div>
+            <label>Quality Preset: </label>
+            <select
+              value={qualityPreset}
+              onChange={handlePresetChange}
+              style={{
+                background: "#333",
+                color: "white",
+                border: "1px solid #555",
+              }}
+            >
+              {Object.keys(VISUAL_CONFIG.qualityPresets).map((preset) => (
+                <option key={preset} value={preset}>
+                  {preset}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div
+            style={{
+              marginTop: "10px",
+              borderTop: "1px solid #555",
+              paddingTop: "10px",
+            }}
+          >
+            {Object.entries(qualitySettings).map(([key, value]) => (
+              <div
+                key={key}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: "5px",
+                }}
+              >
+                <span>{key}:</span>
+                {typeof value === "boolean" ? (
+                  <input
+                    type="checkbox"
+                    checked={value}
+                    onChange={(e) => handleSettingChange(key, e.target.checked)}
+                  />
+                ) : typeof value === "number" ? (
+                  <input
+                    type="number"
+                    value={value}
+                    onChange={(e) =>
+                      handleSettingChange(key, parseFloat(e.target.value))
+                    }
+                    style={{
+                      background: "#333",
+                      color: "white",
+                      border: "1px solid #555",
+                      width: "60px",
+                    }}
+                  />
+                ) : (
+                  <span>{String(value)}</span>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

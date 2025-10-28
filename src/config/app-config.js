@@ -160,55 +160,56 @@ export const VISUAL_CONFIG = {
   qualityPreset: "high", // "low", "medium", "high", "ultra"
 
   // 🎨 Render Quality Settings (auto-configured based on preset)
-  quality: (() => {
-    const presets = {
-      low: {
-        antialias: false,
-        multisampling: 0,
-        shadowMapSize: 512,
-        shadowType: THREE.BasicShadowMap,
-        anisotropy: 1,
-        enableSMAA: false,
-        enableFXAA: false, // Basic FXAA for low-end devices
-        enablePMNDRS: false, // Advanced PMNDRS postprocessing
-        pixelRatio: 1,
-      },
-      medium: {
-        antialias: true,
-        multisampling: 2,
-        shadowMapSize: 1024,
-        shadowType: THREE.PCFShadowMap,
-        anisotropy: 2,
-        enableSMAA: false,
-        enableFXAA: true, // FXAA for better performance
-        enablePMNDRS: false,
-        pixelRatio: 1.5, // Static for SSR
-      },
-      high: {
-        antialias: true,
-        multisampling: 4,
-        shadowMapSize: 1024,
-        shadowType: THREE.PCFSoftShadowMap,
-        anisotropy: 4,
-        enableSMAA: true,
-        enableFXAA: false,
-        enablePMNDRS: true, // Advanced PMNDRS postprocessing
-        pixelRatio: 2, // Static value for SSR compatibility
-      },
-      ultra: {
-        antialias: true,
-        multisampling: 8,
-        shadowMapSize: 2048,
-        shadowType: THREE.PCFSoftShadowMap,
-        anisotropy: 8,
-        enableSMAA: true,
-        enableFXAA: false,
-        enablePMNDRS: true,
-        pixelRatio: 2, // Static value for SSR compatibility
-      },
-    };
-    return presets["high"]; // Return selected preset directly
-  })(),
+  qualityPresets: {
+    low: {
+      antialias: false,
+      multisampling: 0,
+      shadowMapSize: 512,
+      shadowType: THREE.BasicShadowMap,
+      anisotropy: 1,
+      enableSMAA: false,
+      enableFXAA: false, // Basic FXAA for low-end devices
+      enablePMNDRS: false, // Advanced PMNDRS postprocessing
+      pixelRatio: 1,
+    },
+    medium: {
+      antialias: true,
+      multisampling: 2,
+      shadowMapSize: 1024,
+      shadowType: THREE.PCFShadowMap,
+      anisotropy: 2,
+      enableSMAA: false,
+      enableFXAA: true, // FXAA for better performance
+      enablePMNDRS: false,
+      pixelRatio: 1.5, // Static for SSR
+    },
+    high: {
+      antialias: true,
+      multisampling: 4,
+      shadowMapSize: 1024,
+      shadowType: THREE.PCFSoftShadowMap,
+      anisotropy: 4,
+      enableSMAA: true,
+      enableFXAA: false,
+      enablePMNDRS: true, // Advanced PMNDRS postprocessing
+      pixelRatio: 2, // Static value for SSR compatibility
+    },
+    ultra: {
+      antialias: true,
+      multisampling: 8,
+      shadowMapSize: 2048,
+      shadowType: THREE.PCFSoftShadowMap,
+      anisotropy: 8,
+      enableSMAA: true,
+      enableFXAA: false,
+      enablePMNDRS: true,
+      pixelRatio: 2, // Static value for SSR compatibility
+    },
+  },
+
+  get quality() {
+    return this.qualityPresets[this.qualityPreset];
+  },
 
   // ═══════════════════════════════════════════════════════════════════════════════
   // 🌟 BLOOM SYSTEM CONFIGURATION
@@ -251,147 +252,9 @@ export const VISUAL_CONFIG = {
     color: "#FFA500",
     intensity: 1.0,
   },
-
-  // Quality settings
-  quality: {
-    antialias: true,
-    multisampling: 4,
-    shadowMapSize: 1024,
-    anisotropy: 4,
-    enableSMAA: true,
-    enableFXAA: false,
+  get quality() {
+    return this.qualityPresets[this.qualityPreset];
   },
-
-  // 💡 Lighting Configuration
-  lighting: {
-    // ☀️ Ambient Light
-    ambient: {
-      enabled: true,
-      color: "#404040", // Soft gray ambient light
-      intensity: 0.6, // Subtle ambient lighting
-    },
-
-    // ☀️ Directional Light (Sun)
-    directional: {
-      enabled: true,
-      color: "#ffffff", // Pure white sunlight
-      intensity: 1.2, // Bright directional light
-      position: [10, 10, 5], // [x, y, z] - Sun position
-
-      // 🌘 Shadow Settings
-      shadows: {
-        enabled: true,
-        mapSize: 1024, // Shadow map resolution
-        camera: {
-          near: 0.1,
-          far: 50,
-          left: -10,
-          right: 10,
-          top: 10,
-          bottom: -10,
-        },
-      },
-    },
-
-    // 🔆 Point Lights (Array of point lights)
-    pointLights: [
-      // {
-      //   enabled: true,
-      //   color: "#ff6666",
-      //   intensity: 1.0,
-      //   position: [2, 3, 2],
-      //   distance: 10,
-      //   decay: 2,
-      // },
-    ],
-
-    // 💡 Spot Lights (Array of spot lights)
-    spotLights: [
-      // {
-      //   enabled: true,
-      //   color: "#ffffff",
-      //   intensity: 1.5,
-      //   position: [0, 5, 0],
-      //   target: [0, 0, 0],
-      //   angle: Math.PI / 6,
-      //   penumbra: 0.3,
-      //   distance: 20,
-      //   decay: 2,
-      // },
-    ],
-  },
-
-  // 🎨 Backward Compatibility - Old structure for existing components
-  background: "#1a1a2e",
-  environment: "city",
-  ambientLight: {
-    color: "#ffffff",
-    intensity: 0.6,
-  },
-  keyLight: {
-    position: [10, 10, 5],
-    color: "#ffffff",
-    intensity: 1.2,
-  },
-  fillLight: {
-    position: [-5, 5, -5],
-    color: "#87CEEB",
-    intensity: 1.0,
-  },
-  rimLight: {
-    position: [0, 5, -10],
-    color: "#FFA500",
-    intensity: 1.0,
-  },
-  quality: (() => {
-    const presets = {
-      low: {
-        antialias: false,
-        multisampling: 0,
-        shadowMapSize: 512,
-        shadowType: THREE.BasicShadowMap,
-        anisotropy: 1,
-        enableSMAA: false,
-        enableFXAA: false,
-        enablePMNDRS: false,
-        pixelRatio: 1,
-      },
-      medium: {
-        antialias: true,
-        multisampling: 2,
-        shadowMapSize: 1024,
-        shadowType: THREE.PCFShadowMap,
-        anisotropy: 2,
-        enableSMAA: false,
-        enableFXAA: true,
-        enablePMNDRS: false,
-        pixelRatio: 1.5,
-      },
-      high: {
-        antialias: true,
-        multisampling: 4,
-        shadowMapSize: 1024,
-        shadowType: THREE.PCFSoftShadowMap,
-        anisotropy: 4,
-        enableSMAA: true,
-        enableFXAA: false,
-        enablePMNDRS: true,
-        pixelRatio: 2,
-      },
-      ultra: {
-        antialias: true,
-        multisampling: 8,
-        shadowMapSize: 2048,
-        shadowType: THREE.PCFSoftShadowMap,
-        anisotropy: 8,
-        enableSMAA: true,
-        enableFXAA: false,
-        enablePMNDRS: true,
-        pixelRatio: 2,
-      },
-    };
-    return presets.high; // Return current preset
-  })(),
 
   // 🎨 Material Settings
   materials: {
