@@ -101,7 +101,7 @@ extend({
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🎯 CAMERA & SCENE CONFIGURATION
+// 🎯 CAMERA
 // ═══════════════════════════════════════════════════════════════════════════════
 // Camera configuration is now in CameraSystem.jsx
 
@@ -114,7 +114,12 @@ function Loader() {
   return <Html center>{progress.toFixed(0)} % yükleniyor</Html>;
 }
 
-function Model({ target, onTargetChange, onAnimationsDetected }) {
+function Model({
+  target,
+  onTargetChange,
+  onAnimationsDetected,
+  qualitySettings,
+}) {
   // Simple model loading without error handling for now
   const gltf = useLoader(GLTFLoader, "/models/bdr_room_1.glb");
 
@@ -413,7 +418,7 @@ function Model({ target, onTargetChange, onAnimationsDetected }) {
             }
 
             // 🎨 Apply texture quality settings
-            if (VISUAL_CONFIG.quality.anisotropy > 1) {
+            if (qualitySettings.anisotropy > 1) {
               // Apply anisotropy to common texture maps for crisp details
               const textureProps = [
                 "map",
@@ -425,7 +430,7 @@ function Model({ target, onTargetChange, onAnimationsDetected }) {
               ];
               textureProps.forEach((prop) => {
                 if (mat[prop] && mat[prop].isTexture) {
-                  mat[prop].anisotropy = VISUAL_CONFIG.quality.anisotropy;
+                  mat[prop].anisotropy = qualitySettings.anisotropy;
                   mat[prop].needsUpdate = true;
                 }
               });
@@ -472,7 +477,7 @@ function Model({ target, onTargetChange, onAnimationsDetected }) {
         );
       }
     }
-  }, [gltf, materialsProcessed]);
+  }, [gltf, materialsProcessed, qualitySettings]);
 
   console.log("🎬 Rendering Model component, gltf.scene:", gltf?.scene);
 
@@ -503,6 +508,20 @@ export default function Scene() {
   // Shared target state for both OrbitControls and FocusPointMarker
   const [sharedTarget, setSharedTarget] = useState(CAMERA_CONFIG.target);
   const [hasWebGL, setHasWebGL] = useState(true);
+
+  // Quality Settings State
+  const [qualityPreset, setQualityPreset] = useState(
+    VISUAL_CONFIG.qualityPreset
+  );
+  const [qualitySettings, setQualitySettings] = useState(
+    VISUAL_CONFIG.qualityPresets[qualityPreset]
+  );
+
+  const handleQualityChange = useCallback((preset, settings) => {
+    setQualityPreset(preset);
+    setQualitySettings(settings);
+    console.log(`Quality preset changed to: ${preset}`, settings);
+  }, []);
 
   // Debug panels visibility state
   const [debugPanelsVisible, setDebugPanelsVisible] = useState(
@@ -621,6 +640,7 @@ export default function Scene() {
   return (
     <ModalProvider>
       <Canvas
+        key={qualityPreset} // Force remount when preset changes to apply GL settings
         camera={createInitialCamera(cameraType)}
         shadows // Enable shadows with optimization
         dpr={[1, 2]} // Responsive device pixel ratio for SSR safety
@@ -628,7 +648,7 @@ export default function Scene() {
         frameloop="always" // Keep rendering but optimize internally
         gl={{
           // Anti-aliasing settings
-          antialias: VISUAL_CONFIG.quality.antialias,
+          antialias: qualitySettings.antialias,
           alpha: false,
           powerPreference: "high-performance",
 
@@ -643,7 +663,7 @@ export default function Scene() {
           // Enhanced shadow settings
           shadowMap: {
             enabled: true,
-            type: VISUAL_CONFIG.quality.shadowType,
+            type: qualitySettings.shadowType,
             autoUpdate: true,
           },
         }}
@@ -679,6 +699,7 @@ export default function Scene() {
             target={sharedTarget}
             onTargetChange={setSharedTarget}
             onAnimationsDetected={setAvailableAnimations}
+            qualitySettings={qualitySettings}
           />
         </Suspense>
         {/* Camera System handles switching automatically */}
@@ -710,6 +731,7 @@ export default function Scene() {
         <BloomSystem
           DEVELOPER_CONFIG={DEVELOPER_CONFIG}
           VISUAL_CONFIG={VISUAL_CONFIG}
+          qualitySettings={qualitySettings}
         />
         {/* 🎯 DEVELOPER ONLY: Interactive Collider System */}
         {DEVELOPER_CONFIG.ENABLE_DEBUG_MODE && (
@@ -753,6 +775,9 @@ export default function Scene() {
             <QualityDebugUI
               DEVELOPER_CONFIG={DEVELOPER_CONFIG}
               DEBUG_UI_CONFIG={DEBUG_UI_CONFIG}
+              qualityPreset={qualityPreset}
+              qualitySettings={qualitySettings}
+              onQualityChange={handleQualityChange}
             />
           </>
         )}

@@ -6,24 +6,24 @@ import React, { useState, useEffect } from "react";
 import { useDebugUIPosition } from "./UILayoutManager";
 import { VISUAL_CONFIG } from "../../config/app-config";
 
-export function QualityDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
+export function QualityDebugUI({
+  DEVELOPER_CONFIG,
+  DEBUG_UI_CONFIG,
+  qualityPreset,
+  qualitySettings,
+  onQualityChange,
+}) {
   const [isMinimized, setIsMinimized] = useState(false);
   const { position, isVisible } = useDebugUIPosition("qualityDebug");
-  const [qualityPreset, setQualityPreset] = useState(
-    VISUAL_CONFIG.qualityPreset
-  );
-  const [qualitySettings, setQualitySettings] = useState(VISUAL_CONFIG.quality);
-
-  useEffect(() => {
-    setQualitySettings(VISUAL_CONFIG.qualityPresets[qualityPreset]);
-  }, [qualityPreset]);
 
   const handlePresetChange = (e) => {
-    setQualityPreset(e.target.value);
+    const newPreset = e.target.value;
+    onQualityChange(newPreset, VISUAL_CONFIG.qualityPresets[newPreset]);
   };
 
   const handleSettingChange = (setting, value) => {
-    setQualitySettings((prev) => ({ ...prev, [setting]: value }));
+    const newSettings = { ...qualitySettings, [setting]: value };
+    onQualityChange(qualityPreset, newSettings);
   };
 
   if (!DEVELOPER_CONFIG.ENABLE_DEBUG_MODE || !isVisible || !position) {
