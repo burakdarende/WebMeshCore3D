@@ -10,7 +10,7 @@ export function BloomDebugUI({
   DEBUG_UI_CONFIG,
   VISUAL_CONFIG,
 }) {
-  // Start with default values (PMNDRS uyumlu)
+  // Start with default values (PMNDRS-compatible)
   const [bloomData, setBloomData] = useState(() => ({
     bloomParams: {
       luminanceThreshold: VISUAL_CONFIG.bloom.luminanceThreshold,
@@ -56,13 +56,11 @@ export function BloomDebugUI({
 
   const { bloomParams, setBloomParams } = bloomData;
 
-  // --- YENİ: ORTAK GÜNCELLEME FONKSİYONU ---
-  // Slider'ı ve global state'i aynı anda güncelleyen fonksiyon
+  // Shared updater: updates both the slider (local UI) and the global bloom state
   const handleParamChange = (paramName, value) => {
     const newValue = parseFloat(value);
 
-    // 1. Global state'i güncelle (BloomSystem'deki ana state)
-    // Bu, efekti değiştirir
+    // 1. Update global state (main state in BloomSystem). This changes the effect.
     if (setBloomParams) {
       setBloomParams((prev) => ({
         ...prev,
@@ -70,8 +68,7 @@ export function BloomDebugUI({
       }));
     }
 
-    // 2. Local state'i ANINDA güncelle
-    // Bu, slider'ın takılmadan hareket etmesini sağlar
+    // 2. Update local state immediately to keep the slider responsive
     setBloomData((prevData) => ({
       ...prevData,
       bloomParams: {
@@ -80,7 +77,7 @@ export function BloomDebugUI({
       },
     }));
   };
-  // --- BİTTİ ---
+  // end shared updater
 
   return (
     <div
@@ -154,11 +151,9 @@ export function BloomDebugUI({
               max="1"
               step="0.001"
               value={bloomParams.luminanceThreshold || 0.1}
-              // --- DEĞİŞİKLİK ---
               onChange={(e) =>
                 handleParamChange("luminanceThreshold", e.target.value)
               }
-              // --- BİTTİ ---
               style={{ width: "100%" }}
             />
           </div>
@@ -174,11 +169,9 @@ export function BloomDebugUI({
               max="1"
               step="0.001"
               value={bloomParams.luminanceSmoothing || 0.1}
-              // --- DEĞİŞİKLİK ---
               onChange={(e) =>
                 handleParamChange("luminanceSmoothing", e.target.value)
               }
-              // --- BİTTİ ---
               style={{ width: "100%" }}
             />
           </div>
@@ -193,15 +186,13 @@ export function BloomDebugUI({
               max="3"
               step="0.01"
               value={bloomParams.intensity || 0.0}
-              // --- DEĞİŞİKLİK ---
               onChange={(e) => handleParamChange("intensity", e.target.value)}
-              // --- BİTTİ ---
               style={{ width: "100%" }}
             />
           </div>
 
           <div style={{ fontSize: "10px", color: "#888", marginTop: "10px" }}>
-            🎯 Bloom parlaklık (luminance) bazlı çalışıyor.
+            🎯 Bloom works based on luminance (brightness).
           </div>
         </>
       )}

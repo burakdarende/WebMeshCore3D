@@ -7,7 +7,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
-// Modern Post-Processing (PMNDRS) kütüphanesi
+// Modern Post-Processing (PMNDRS) library
 import {
   EffectComposer as PMEffectComposer,
   EffectPass,
@@ -54,7 +54,7 @@ export function PostProcessingEffect({ qualitySettings, bloomParams }) {
   const composerRef = useRef();
   const bloomEffectRef = useRef();
 
-  // Ana Post-Processing kurulumu
+  // Main post-processing setup
   useEffect(() => {
     if (!isEnabled || !gl || !scene || !camera || !qualitySettings) return;
 
@@ -70,10 +70,8 @@ export function PostProcessingEffect({ qualitySettings, bloomParams }) {
       });
       composerRef.current = composer;
 
-      // --- YENİ: Composer'ı global scope'a ata ---
-      // QualityRuntimeUpdater'ın erişebilmesi için.
+      // Assign composer to global scope so QualityRuntimeUpdater can access it
       window.postProcessingComposer = composer;
-      // --- BİTTİ ---
 
       composer.addPass(new PMRenderPass(scene, camera));
       const effects = [];
@@ -119,9 +117,8 @@ export function PostProcessingEffect({ qualitySettings, bloomParams }) {
           console.log("♻️ Disposing Post-Processing chain.");
           composerRef.current.dispose();
         }
-        // --- YENİ: Global scope'u temizle ---
+        // Clear composer from global scope
         window.postProcessingComposer = null;
-        // --- BİTTİ ---
       };
     } catch (error) {
       console.error("❌ Modern Post-Processing System error:", error);
@@ -129,7 +126,7 @@ export function PostProcessingEffect({ qualitySettings, bloomParams }) {
     }
   }, [gl, scene, camera, size, isEnabled, qualitySettings]);
 
-  // SADECE bloomParams'ı dinamik olarak günceller
+  // Only updates bloomParams dynamically
   useEffect(() => {
     if (bloomEffectRef.current) {
       bloomEffectRef.current.luminanceMaterial.threshold =
@@ -168,7 +165,7 @@ export function BloomControls({ isDebugMode, bloomParams, setBloomParams }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ANA BLOOM SYSTEM COMPONENT'İ
+// MAIN BLOOM SYSTEM COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export function BloomSystem({

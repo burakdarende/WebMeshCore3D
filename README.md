@@ -75,6 +75,23 @@ npm run dev
 
 On production hosting (Vercel/Netlify) ensure you set `DEVELOPER_CONFIG.ENABLE_DEBUG_MODE=false` in the deployed config (or via environment variable wiring) if you do not want debug panels in prod.
 
+### Docker
+
+The repo contains a `Dockerfile` for containerized builds. Notes:
+
+- The builder stage installs full dependencies (with `--legacy-peer-deps`) so `npm run build` works inside the container. Dev dependencies are pruned after the build and `node_modules` are copied into the runner image to keep the final image lean.
+- There's a `.dockerignore` to exclude local artifacts from the image (`node_modules`, `.next`, `.env`, etc.).
+- Optional env flag: `NEXT_PUBLIC_ENABLE_DEBUG_UI` is set in the Dockerfile to `false` by default. This is an optional runtime flag; to actually gate debug UI via environment variables you'll need to wire `src/config/app-config.js` to read `process.env.NEXT_PUBLIC_ENABLE_DEBUG_UI` and set `DEVELOPER_CONFIG.ENABLE_DEBUG_MODE` accordingly.
+
+Build and run (example):
+
+```powershell
+docker build -t webmeshcore3d:latest .
+docker run -p 3000:3000 --env NEXT_PUBLIC_ENABLE_DEBUG_UI=false webmeshcore3d:latest
+```
+
+Set `NEXT_PUBLIC_ENABLE_DEBUG_UI=true` only for debugging containers — avoid enabling debug panels in public production images.
+
 ---
 
 ## Lighting JSON workflow (how to save/apply presets)

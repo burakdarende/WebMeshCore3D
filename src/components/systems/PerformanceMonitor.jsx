@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // PERFORMANCE MONITOR (GL-BENCH)
 // ═══════════════════════════════════════════════════════════════════════════════
-// Entegre GL-Bench performans monitörü
+// Integrated GL-Bench performance monitor
 
 import React, { useEffect, useRef } from "react";
 import { useThree, useFrame } from "@react-three/fiber";
@@ -11,7 +11,7 @@ import GLBench from "gl-bench/dist/gl-bench";
 import { DEVELOPER_CONFIG } from "../../config/app-config";
 
 export function PerformanceMonitor() {
-  // Debug mod kapalıysa bu component hiçbir şey yapmaz
+  // If debug mode is disabled, this component does nothing
   if (!DEVELOPER_CONFIG.ENABLE_DEBUG_MODE) {
     return null;
   }
@@ -19,19 +19,19 @@ export function PerformanceMonitor() {
   const { gl, scene } = useThree();
   const benchRef = useRef(null);
 
-  // GLBench'i bir kez başlat
+  // Initialize GLBench once
   const breakdownRef = useRef(null);
   useEffect(() => {
     if (gl && !benchRef.current) {
       console.log("🚀 Initializing GL-Bench Performance Monitor...");
 
-      // ✅ Bench'i oluştur
+      // ✅ Create the bench instance
       const bench = new GLBench(gl);
 
-      // ✅ Referansa ata
+      // ✅ Assign to ref
       benchRef.current = bench;
 
-      // ✅ DOM stilleri
+      // ✅ DOM styling
       if (bench.dom) {
         bench.dom.style.position = "fixed";
         bench.dom.style.top = "10px";
@@ -80,15 +80,14 @@ export function PerformanceMonitor() {
     };
   }, [gl]);
 
-  // --- HATA DÜZELTME: 's' harfi kaldırıldı ---
-  // Render döngüsünün en başına kanca at
+  // Hook at the start of the render loop
   useFrame(() => {
     if (benchRef.current) {
       benchRef.current.begin();
     }
-  }, -Infinity); // En düşük öncelik (en önce çalışır)
+  }, -Infinity); // lowest priority (runs first)
 
-  // Render döngüsünün en sonuna kanca at
+  // Hook at the end of the render loop
   useFrame(() => {
     if (benchRef.current) {
       try {
@@ -101,12 +100,12 @@ export function PerformanceMonitor() {
         console.warn("GL-Bench end/nextFrame error:", e);
       }
     }
-  }, Infinity); // En yüksek öncelik (en son çalışır)
+  }, Infinity); // highest priority (runs last)
 
   // Hook to update breakdown overlay periodically
   usePerfBreakdownUpdater(breakdownRef, scene, gl);
 
-  return null; // Bu component React DOM'u render etmez
+  return null; // This component does not render React DOM
 }
 
 // Helper: approximate scene memory usage (textures + geometry) in bytes

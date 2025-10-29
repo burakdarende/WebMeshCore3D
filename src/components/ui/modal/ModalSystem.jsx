@@ -14,12 +14,12 @@ const modalStyles = {
     inset: 0,
     zIndex: 9998,
     background: "rgba(0, 0, 0, 0.3)",
-    // Overlay'de blur olmasın - sadece modal'da olacak
+    // Do not apply blur on the overlay - only the modal content should be blurred
     transition: "all 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
   },
   overlayGlass: {
     background: "rgba(0, 0, 0, 0.2)",
-    // Glass overlay'de de blur olmasın
+    // Do not apply blur on the glass overlay either
   },
   overlayOpen: {
     opacity: 1,
@@ -33,7 +33,7 @@ const modalStyles = {
     left: "50%",
     transform: "translate(-50%, -50%)",
     zIndex: 9999,
-    background: "rgba(0, 0, 0, 0.1)", // Şeffaf koyu background
+    background: "rgba(0, 0, 0, 0.1)", // Translucent dark background
     backdropFilter: "blur(20px) saturate(120%)",
     borderRadius: "12px",
     border: "1px solid rgba(255, 255, 255, 0.1)",

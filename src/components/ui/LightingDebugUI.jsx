@@ -840,11 +840,11 @@ export function LightingDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
       {!isMinimized && (
         <div
           style={{
-            maxHeight: "70vh", // Maksimum yükseklik ekranın %70'i
-            overflowY: "auto", // Dikey scroll
-            overflowX: "hidden", // Yatay scroll gizli
-            paddingRight: "8px", // Scrollbar için alan
-            marginRight: "-8px", // Genel genişliği korumak için
+            maxHeight: "70vh", // Maximum height: 70% of the viewport
+            overflowY: "auto", // vertical scroll
+            overflowX: "hidden", // hide horizontal scroll
+            paddingRight: "8px", // space for scrollbar
+            marginRight: "-8px", // preserve overall width
 
             // Custom scrollbar styles (webkit browsers)
             scrollbarWidth: "thin", // Firefox

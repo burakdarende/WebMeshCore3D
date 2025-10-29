@@ -283,7 +283,7 @@ export const UI_STYLES = `
     margin-left: 8px;
   }
 
-  /* Lighting Debug Panel Özel Scrollbar */
+  /* Lighting Debug Panel custom scrollbar */
   .lighting-debug-scroll::-webkit-scrollbar {
     width: 6px;
   }

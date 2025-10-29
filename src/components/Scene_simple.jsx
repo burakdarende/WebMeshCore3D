@@ -23,7 +23,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { useLoader } from "@react-three/fiber";
 import * as THREE from "three";
 
-// PMNDRS postprocessing for advanced anti-aliasing (BloomSystem'e taşındı)
+// PMNDRS postprocessing for advanced anti-aliasing (moved to BloomSystem)
 import {
   EffectComposer as PMEffectComposer,
   EffectPass,
@@ -46,9 +46,8 @@ import {
 } from "./systems/CameraSystem";
 import { LightingSystem } from "./systems/LightingSystem";
 
-// --- YENİ İMPORT ---
+// Performance monitor import
 import { PerformanceMonitor } from "./systems/PerformanceMonitor";
-// --- BİTTİ ---
 
 // Collider System Components
 import { ColliderSystem } from "./systems/ColliderSystem";
@@ -85,7 +84,7 @@ import {
 
 // Quality Runtime Updater - Applies quality settings to renderer at runtime
 function QualityRuntimeUpdater({ qualitySettings }) {
-  const { gl, scene, size } = useThree(); // size'ı buradan alıyoruz
+  const { gl, scene, size } = useThree(); // size is obtained from useThree
 
   useEffect(() => {
     if (!gl || !scene || !qualitySettings) return;
@@ -95,23 +94,23 @@ function QualityRuntimeUpdater({ qualitySettings }) {
       qualitySettings
     );
 
-    // --- 1. Pixel Ratio (DPR) Güncellemesi ---
+    // --- 1. Pixel Ratio (DPR) Update ---
     if (gl.getPixelRatio() !== qualitySettings.pixelRatio) {
       gl.setPixelRatio(qualitySettings.pixelRatio);
       console.log(`✅ Set Pixel Ratio to: ${qualitySettings.pixelRatio}`);
 
-      // Post-Processing Composer'ı yeniden boyutlandır (Zoom sorununu düzeltir)
+      // Resize Post-Processing Composer (fixes zoom issues)
       if (window.postProcessingComposer) {
         window.postProcessingComposer.setSize(size.width, size.height);
         console.log(`✅ Resized EffectComposer for new Pixel Ratio.`);
       }
     }
 
-    // --- 2. Gölge Ayarları ---
+    // --- 2. Shadow Settings ---
     gl.shadowMap.enabled = true;
     gl.shadowMap.type = qualitySettings.shadowType;
 
-    // --- 3. Gölge Çözünürlüğü (shadowMapSize) Güncellemesi ---
+    // --- 3. Shadow Resolution (shadowMapSize) Update ---
     let updatedLights = 0;
     scene.traverse((node) => {
       if (node.isLight && node.castShadow) {
@@ -135,7 +134,7 @@ function QualityRuntimeUpdater({ qualitySettings }) {
       );
     }
 
-    // --- 4. Anisotropi Güncellemesi ---
+    // --- 4. Anisotropy Update ---
     let textureCount = 0;
     scene.traverse((child) => {
       if (child.isMesh && child.material) {
@@ -180,7 +179,7 @@ function QualityRuntimeUpdater({ qualitySettings }) {
 
 function Loader() {
   const { progress } = useProgress();
-  return <Html center>{progress.toFixed(0)} % yükleniyor</Html>;
+  return <Html center>{progress.toFixed(0)}% loading</Html>;
 }
 
 function Model({

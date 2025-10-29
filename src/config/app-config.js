@@ -170,7 +170,7 @@ export const VISUAL_CONFIG = {
       enableSMAA: false,
       enableFXAA: true,
       enablePMNDRS: true,
-      pixelRatio: 1, // --- GERİ EKLENDİ ---
+      pixelRatio: 1, // re-added
     },
     medium: {
       antialias: false,
@@ -181,7 +181,7 @@ export const VISUAL_CONFIG = {
       enableSMAA: false,
       enableFXAA: true,
       enablePMNDRS: true,
-      pixelRatio: 1.5, // --- GERİ EKLENDİ ---
+      pixelRatio: 1.5, // re-added
     },
     high: {
       antialias: false,
@@ -192,7 +192,7 @@ export const VISUAL_CONFIG = {
       enableSMAA: true,
       enableFXAA: false,
       enablePMNDRS: true,
-      pixelRatio: 2, // --- GERİ EKLENDİ ---
+      pixelRatio: 2, // re-added
     },
     ultra: {
       antialias: false,
@@ -203,7 +203,7 @@ export const VISUAL_CONFIG = {
       enableSMAA: true,
       enableFXAA: false,
       enablePMNDRS: true,
-      pixelRatio: 2, // --- GERİ EKLENDİ --- (Varsayılan olarak 2, UI'dan 5'e çıkabilir)
+      pixelRatio: 2, // re-added (default 2, UI can increase to 5)
     },
   },
 
@@ -217,42 +217,26 @@ export const VISUAL_CONFIG = {
 
   bloom: {
     // 🎛️ Interactive Controls (visible in debug UI when enabled)
-    // BU AYARLAR PMBloomEffect İÇİNDİR
+    // These settings are for PMBloomEffect
     luminanceThreshold: 0.1, // How bright pixels need to be to glow (0.0 - 1.0)
     luminanceSmoothing: 0.1, // Smooth transition for threshold (0.0 - 1.0)
     intensity: 0.3, // Intensity of the glow effect (0.0 - 3.0)
 
     // ⚙️ Technical Settings
     mipmapBlur: true, // Use mipmap blur for better performance and look
-    radius: 0.22, // Eski UnrealBloomPass ayarı - artık kullanılmıyor
-    strength: 0.1, // Eski UnrealBloomPass ayarı - artık kullanılmıyor
-    threshold: 0.1, // Eski UnrealBloomPass ayarı - artık kullanılmıyor
-    exposure: 1.0, // Artık ToneMappingEffect tarafından yönetiliyor
+    radius: 0.22, // Old UnrealBloomPass setting - deprecated
+    strength: 0.1, // Old UnrealBloomPass setting - deprecated
+    threshold: 0.1, // Old UnrealBloomPass setting - deprecated
+    exposure: 1.0, // Now managed by ToneMappingEffect
   },
   // ═══════════════════════════════════════════════════════════════════════════════
   // 🎨 Backward Compatibility - Old structure for existing components
   // ═══════════════════════════════════════════════════════════════════════════════
   background: "#1a1a2e",
   environment: "city",
-  ambientLight: {
-    color: "#ffffff",
-    intensity: 0.6,
-  },
-  keyLight: {
-    position: [10, 10, 5],
-    color: "#ffffff",
-    intensity: 1.2,
-  },
-  fillLight: {
-    position: [-5, 5, -5],
-    color: "#87CEEB",
-    intensity: 1.0,
-  },
-  rimLight: {
-    position: [0, 5, -10],
-    color: "#FFA500",
-    intensity: 1.0,
-  },
+  // Lighting is now JSON-driven and managed by LightingConfig + src/data/lights.json
+  // Legacy single-light fields (ambient/key/fill/rim) removed to avoid duplication.
+  // If needed, use the lighting JSON or `src/components/systems/LightingConfig.js` defaults.
 
   // 🎨 Material Settings
   materials: {
@@ -458,7 +442,7 @@ export const PATHS_CONFIG = {
   data: {
     colliders: "/src/data/collider.json", // Collider configuration
     materials: "/src/data/materials.json", // Material definitions
-    lighting: "/src/data/lighting.json", // Lighting presets
+    lighting: "/src/data/lights.json", // Lighting presets (JSON-driven system)
   },
 
   // 🏗️ Components

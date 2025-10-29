@@ -131,13 +131,12 @@ export function QualityDebugUI({
                     onChange={(e) => handleSettingChange(key, e.target.checked)}
                   />
                 ) : typeof value === "number" ? (
-                  // --- DEĞİŞİKLİK BAŞLANGICI: pixelRatio için Slider ---
                   key === "pixelRatio" ? (
                     <div
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        width: "130px", // Toplam genişlik
+                        width: "130px",
                         justifyContent: "space-between",
                       }}
                     >
@@ -150,7 +149,7 @@ export function QualityDebugUI({
                         onChange={(e) =>
                           handleSettingChange(key, parseFloat(e.target.value))
                         }
-                        style={{ width: "80px", marginRight: "5px" }} // Slider genişliği
+                        style={{ width: "80px", marginRight: "5px" }}
                       />
                       <span
                         style={{
@@ -163,7 +162,6 @@ export function QualityDebugUI({
                       </span>
                     </div>
                   ) : (
-                    // Diğer number input'lar için (örn: shadowMapSize)
                     <input
                       type="number"
                       value={value}
@@ -179,7 +177,6 @@ export function QualityDebugUI({
                     />
                   )
                 ) : (
-                  // --- DEĞİŞİKLİK SONU ---
                   <span>{String(value)}</span>
                 )}
               </div>

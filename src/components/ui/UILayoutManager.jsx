@@ -65,7 +65,7 @@ export const UILayoutManager = ({ children, DEVELOPER_CONFIG }) => {
 
       bloomDebug: {
         bottom: margin,
-        left: `calc(50% - ${panelWidth / 2}px)`, // Ekranın ortasında
+        left: `calc(50% - ${panelWidth / 2}px)`, // centered on screen
         width: panelWidth,
       },
 
