@@ -1,404 +1,157 @@
-# � WebMeshCore3D - Advanced 3D Scene Framework
+# WebMeshCore3D — Advanced 3D Scene Framework
 
-Professional-grade 3D visualization system built for real-world applications. Engineered as a comprehensive alternative to commercial solutions with full developer control.
+Professional 3D scene framework focused on performance, modularity and developer ergonomics.
 
-> **⚠️ SECURITY DISCLAIMER**  
-> This project has been developed with AI assistance. No security guarantees are provided. Users should conduct thorough security audits and testing before deploying in production environments. Use at your own risk.
+> ⚠️ Security & production note: this project has been developed with AI assistance and active development; always audit and test before deploying to production.
 
-### 📖 Overview
+## Quick summary
 
-WebMeshCore3D is an enterprise-grade 3D scene framework designed for production environments. Built with a modular architecture optimized for scalable web applications and industrial deployment scenarios.
+WebMeshCore3D is a modular React + Three.js starter/mini-framework for building production 3D scenes. It provides:
 
-### ✨ Core Architecture
+- A centralized configuration (`src/config/app-config.js`) for rendering, lighting, camera and debug flags
+- Reusable systems (Camera, Lighting, Collider, Bloom/Postprocessing) that mount into the scene via `Scene_simple.jsx`
+- A debug UI system (separate fixed DOM panels) that lets developers tune parameters live and export/import JSON presets
+- Performance tooling (gl-bench based monitor + runtime resource estimates)
 
-#### � Modular Collision System
-
-- **JSON-driven collider configuration** - centralized data management
-- **Real-time collision detection** - performance optimized
-- **Interactive hover/click handlers** - enhanced user engagement
-- **Dynamic animation mapping** - automatic animation triggering
-- **Production-ready scaling** - suitable for large projects
-
-#### 🎨 Enterprise Bloom & Post-Processing
-
-- **PMNDRS postprocessing pipeline** - industry standard
-- **Selective emission control** - material-based bloom
-- **Ultra-precise parameter control** (0.001 step precision)
-- **AgX tone mapping** - natural color reproduction
-- **Multi-pass anti-aliasing** (SMAA + FXAA support)
-
-#### 📷 Professional Camera System
-
-- **Dual projection support** - Perspective & Orthographic
-- **Advanced camera controls** - Auto rotate, Camera lock, Mouse tracking
-- **Blender-inspired transform workflow** (G + X/Y/Z constraints)
-- **Real-time debug overlay** - for production values
-- **Smooth camera transitions** - enhanced user experience
-- **Configurable control schemes** - multiple usage scenarios
-- **Centralized configuration** - all camera settings in app-config.js
-
-##### 🔄 Auto Rotate Features
-
-- **Variable speed control** - configurable rotation speed (0.1-5.0)
-- **Direction selection** - left/right rotation with radio buttons
-- **Smart conflict prevention** - mutually exclusive with other camera modes
-
-##### 🔒 Camera Lock System
-
-- **Complete camera control lock** - prevents all camera movements
-- **Visual indicators** - clear UI feedback for lock state
-- **OrbitControls integration** - seamlessly disables zoom/pan/rotate
-
-##### 🎯 Mouse Tracking System
-
-- **Real-time mouse following** - camera responds to mouse position
-- **Intensity control** - adjustable tracking sensitivity (0.1-2.0)
-- **Position shifting** - 3/4 keys for camera repositioning
-- **Delta-based movement** - smooth, non-continuous rotation
-- **Smart controls disable** - prevents conflict with manual camera control
-
-#### ⚡ Performance-First Architecture
-
-- **Adaptive quality presets** - device-based optimization
-- **Modular component loading** - lazy loading support
-- **Memory-efficient rendering** - for large scenes
-- **SSR-compatible configuration** - server-side rendering
-- **Production/development split** - clean deployment
-
-#### 🎛️ Centralized Configuration System
-
-- **Single config file** - all system settings
-- **Environment-based settings** - dev/prod separation
-- **Hot-reload support** - development speed
-- **Type-safe parameters** - error prevention
-- **Backward compatibility** - for existing projects
-
-#### 🛠️ Advanced Debug Interface
-
-- **Responsive UI layout system** - all screen sizes
-- **Multiple debug panels** - Camera, Bloom, Lighting, Collider
-- **H-key toggle system** - quick debug mode
-- **Real-time parameter updates** - live adjustments
-- **Clean production builds** - zero debug residue
-- **Minimize/Maximize panels** - optimized workspace management
-- **Glass morphism styling** - modern UI aesthetics
-
-##### 📷 Camera Debug Panel Features:
-
-- **Auto Rotate Controls**: Speed slider (0.1-5.0) and direction radio buttons
-- **Camera Lock Toggle**: Complete camera movement prevention
-- **Mouse Tracking System**: Real-time mouse-responsive rotation with intensity control
-- **Position Indicators**: Real-time camera position and target coordinates
-- **FOV/Zoom Controls**: Live field of view and zoom adjustments
-- **Camera Type Switcher**: Perspective/Orthographic toggle
-
-### 🚀 Technical Installation
-
-```bash
-# Repository cloning
-git clone https://github.com/burakdarende/WebMeshCore3D.git
-cd WebMeshCore3D
-
-# Dependency installation (legacy peer deps required)
-npm install --legacy-peer-deps
-
-# Development server startup
-npm run dev
-```
-
-### 📂 3D Asset Integration
-
-1. Place GLB/GLTF models in `/public/models/` directory
-2. Update model reference in scene file:
-
-```jsx
-// src/components/Scene_simple.jsx
-const gltf = useLoader(GLTFLoader, "/models/your-model.glb");
-```
-
-3. Update collider configuration:
-
-```json
-// src/data/collider.json
-{
-  "interactiveObjects": [
-    {
-      "name": "YourObjectName",
-      "boundingBox": {
-        /* coordinates */
-      }
-    }
-  ]
-}
-```
-
-### ⚙️ System Configuration
-
-#### Production Deployment:
-
-⚠️ **CRITICAL: Essential steps before production deployment!**
-
-```jsx
-// src/config/app-config.js
-
-// 1️⃣ Disable debug mode
-export const DEVELOPER_CONFIG = {
-  ENABLE_DEBUG_MODE: false, // Disable all debug UI - MUST be false!
-};
-
-// 2️⃣ Set build configuration to production
-export const BUILD_CONFIG = {
-  version: "1.0.0",
-  buildDate: new Date().toISOString(),
-  environment: "production", // MUST be "production"!
-  features: {
-    debug: false, // Disable debug features
-    analytics: true, // Enable analytics
-    errorReporting: true, // Enable error reporting
-  },
-};
-
-// 3️⃣ Performance settings
-export const VISUAL_CONFIG = {
-  qualityPreset: "high", // low/medium/high/ultra
-  bloom: {
-    threshold: 0.1, // Bloom threshold
-    strength: 0.1, // Bloom intensity
-    radius: 0.22, // Bloom spread
-  },
-};
-```
-
-**Production Checklist:**
-
-- [ ] `ENABLE_DEBUG_MODE: false` ✅
-- [ ] `environment: "production"` ✅
-- [ ] `debug: false` ✅
-- [ ] `analytics: true` ✅
-- [ ] `errorReporting: true` ✅
-
-#### Camera Fine-tuning:
-
-```jsx
-export const CAMERA_CONFIG = {
-  position: [5, 3.76, 4.86], // Camera position
-  target: [0.46, 0.77, -0.27], // Focus target
-  perspective: true, // Perspective/Orthographic
-  fov: {
-    perspective: { default: 50 }, // Field of view
-    orthographic: { default: 1.7 }, // Orthographic zoom
-  },
-
-  // 🚀 Advanced Camera Features
-  autoRotate: {
-    enabled: false, // Enable auto rotate by default
-    speed: {
-      default: 2.0, // Default rotation speed
-      min: 0.1,
-      max: 5.0,
-      step: 0.1, // Speed range settings
-    },
-    direction: {
-      default: "right", // Default direction
-      options: ["left", "right"], // Available directions
-    },
-  },
-
-  cameraLock: {
-    enabled: false, // Enable camera lock by default
-    disableControls: true, // Disable OrbitControls when locked
-    showIndicator: true, // Show lock indicator in UI
-  },
-
-  mouseTracking: {
-    enabled: false, // Enable mouse tracking by default
-    intensity: {
-      default: 1.0, // Default intensity
-      min: 0.1,
-      max: 2.0,
-      step: 0.1, // Intensity range
-    },
-    speed: {
-      base: 0.1, // Base rotation speed multiplier
-      multiplier: 1.0, // Additional speed multiplier
-    },
-    positionShift: {
-      enabled: true, // Enable position shifting
-      step: 0.5, // Distance to shift camera position
-      keys: { left: "3", right: "4" }, // Keyboard keys
-    },
-    disableOrbitControls: true, // Disable zoom/pan/rotate when active
-  },
-};
-```
-
-#### Performance Optimization:
-
-```jsx
-export const PERFORMANCE_CONFIG = {
-  fps: { target: 60, adaptive: true },
-  device: {
-    mobile: { reduceQuality: true },
-    desktop: { enableAdvancedEffects: true },
-  },
-};
-```
-
-### 🎯 Development Workflow
-
-1. **Debug mode** operates with all tools active
-2. Use **WASD/EQ** for camera navigation
-3. Use **G + X/Y/Z** for focus point adjustment
-4. **C** key switches camera type
-5. **H** key toggles debug panels visibility
-
-#### 🎮 Advanced Camera Controls:
-
-- **Auto Rotate**: Toggle continuous camera rotation with speed/direction control
-- **Camera Lock**: Lock all camera movements for stable viewing
-- **Mouse Tracking**: Enable mouse-responsive camera rotation
-  - **3/4 keys**: Shift camera position left/right when mouse tracking is active
-  - **Intensity slider**: Adjust mouse tracking sensitivity
-- **Mutual Exclusion**: Camera features prevent conflicts automatically
-
-6. Copy values from debug UI after finding perfect composition
-7. Update config file for production deployment
+This README was updated to reflect recent changes (lighting JSON presets, performance monitor, debug UI gating, and postprocessing rework). See "Recent changes" below.
 
 ---
 
-## � System Requirements
+## How the system is organized (high level)
 
-### Minimum Requirements:
+- `src/components/Scene_simple.jsx`: top-level orchestrator. Creates the `Canvas`, wires `DEVELOPER_CONFIG` and `DEBUG_UI_CONFIG`, and mounts systems and UI panels.
+- Systems (in `src/components/systems/`):
+  - `CameraSystem.jsx` — camera creation, orbit controls, auto-rotate, mouse-tracking and camera switching.
+  - `LightingSystem.jsx` — creates ambient/directional/spot/point lights from runtime state and exposes a `window.lightingDebugData` API for the Lighting Debug UI.
+  - `ColliderSystem.jsx` and `ColliderConfig.js` — collider data + utilities; provides import/export JSON helpers and runtime interaction handlers.
+  - `BloomSystem.jsx` / PostProcessingEffect — builds the EffectComposer and conditionally attaches SMAA/FXAA passes depending on runtime `qualitySettings`.
+- Debug UI (in `src/components/ui/`): fixed DOM panels controlled by `UILayoutManager.jsx`. Panels are gated by `DEVELOPER_CONFIG.ENABLE_DEBUG_MODE` and the layout manager.
 
-- **Browser**: Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
-- **WebGL**: 2.0 support required
-- **Memory**: 4GB RAM minimum for complex scenes
-- **GPU**: Integrated graphics sufficient for basic scenes
+Runtime flow: config → Scene_simple → systems → scene objects
 
-### Recommended for Advanced Features:
+Important implementation details:
 
-- **GPU**: Dedicated graphics card for complex bloom effects
-- **Memory**: 8GB+ RAM for large scenes with mouse tracking
-- **CPU**: Multi-core processor for smooth auto-rotate animations
-- **Network**: Stable connection for asset loading
+- Quality settings no longer force a full Canvas remount. `qualitySettings` are passed down to `BloomSystem` and postprocessing composer is rebuilt in a controlled way when settings change.
+- FXAA/SMAA passes and uniforms are created or updated at runtime depending on quality presets.
+- DOM manipulations for debug UI and perf overlay are performed client-side inside `useEffect` hooks to avoid SSR issues.
 
-### Browser Feature Support:
+---
 
-- **Mouse Tracking**: Requires modern pointer events API
-- **Auto Rotate**: Uses requestAnimationFrame for smooth animation
-- **Camera Lock**: Relies on modern event handling
-- **Debug Panels**: Requires modern CSS grid and flexbox support
+## Recent changes (what I updated/added)
 
-## �🛠️ Technical Stack
+- PerformanceMonitor: integrated `gl-bench` and added a small diagnostic overlay that estimates texture+geometry sizes and reads `renderer.info` and `performance.memory` when available.
+- Lighting JSON workflow:
+  - `src/components/systems/LightingConfig.js` added (defaults, utils, JSON import/export helpers).
+  - `src/data/lights.json` sample added (use it as a source-of-truth or paste into `public/data/` for runtime fetching).
+  - `LightingDebugUI.jsx` now has a "Show JSON" editor (copy/apply) so you can export current lighting state and apply JSON directly at runtime (uses `window.lightingDebugData.setAdvancedLights`).
+- Collider UI and config:
+  - `ColliderConfig.js` provides the collider defaults and `ColliderUtils` (export/import JSON, validation).
+  - `ColliderDebugUI.jsx` supports copy/paste JSON like the lighting UI.
+- Debug gating:
+  - Debug panels are controlled via `DEVELOPER_CONFIG.ENABLE_DEBUG_MODE` in `src/config/app-config.js`. Several panels now accept `DEVELOPER_CONFIG`/`DEBUG_UI_CONFIG` props and early-return `null` when the developer flag is off.
+- Postprocessing & Quality:
+  - Removed the Canvas key-based remount and in-page reloads used previously. Composer rebuilds on `qualitySettings` changes instead.
+  - SMAA and FXAA passes are toggled/updated at runtime based on the active visual preset.
 
-- **Next.js 14.2.5** - React production framework
-- **Three.js 0.157.0** - WebGL 3D graphics engine
-- **React Three Fiber 8.15.12** - React Three.js renderer
-- **React Three Drei 9.88.13** - Essential Three.js helpers
-- **PMNDRS Postprocessing** - Industry-standard effects pipeline
-- **Modular Architecture** - Component-based system design
+If you deployed to Vercel and a debug panel was missing: check `DEVELOPER_CONFIG.ENABLE_DEBUG_MODE` (production builds typically set it to false). Collider/Lighting UIs intentionally gate on this flag.
 
-## 📁 Project Structure
+---
+
+## Installation & dev server
+
+Clone and install dependencies:
+
+```powershell
+git clone https://github.com/burakdarende/WebMeshCore3D.git
+cd WebMeshCore3D
+npm install --legacy-peer-deps
+```
+
+Start the dev server:
+
+```powershell
+npm run dev
+```
+
+On production hosting (Vercel/Netlify) ensure you set `DEVELOPER_CONFIG.ENABLE_DEBUG_MODE=false` in the deployed config (or via environment variable wiring) if you do not want debug panels in prod.
+
+---
+
+## Lighting JSON workflow (how to save/apply presets)
+
+- Use the Lighting Debug UI: open the panel → "Show JSON" → Copy JSON to clipboard.
+- Paste the JSON into a repository file to save as a preset. Two recommended locations:
+  - `src/data/lights.json` — source file for repository presets (editable in repo). Good for development and version control.
+  - `public/data/lights.json` — if you want the app to fetch a preset at runtime in production, put the file here and fetch `/data/lights.json` from `LightingSystem` (not yet automatic).
+- To apply a JSON preset at runtime: paste it into the Lighting Debug UI editor and click "Apply JSON".
+
+Notes: `LightingSystem` persists live settings to `localStorage` under the key `webmesh-lighting-settings`. Loading from JSON will overwrite that stored state until you reset cache.
+
+---
+
+## External libraries and references
+
+This project relies on and integrates several community projects — please check their docs for deeper understanding and updates:
+
+- Three.js — https://threejs.org
+- React Three Fiber (R3F) — https://github.com/pmndrs/react-three-fiber
+- Drei helpers — https://github.com/pmndrs/drei
+- PMNDRS postprocessing (postprocessing effects) — https://github.com/pmndrs/postprocessing
+- gl-bench — performance monitor (npm: `gl-bench`) — https://www.npmjs.com/package/gl-bench
+
+These packages evolve quickly; check compatibility when upgrading.
+
+---
+
+## Troubleshooting
+
+- Debug panels not visible in deployed site: ensure `DEVELOPER_CONFIG.ENABLE_DEBUG_MODE` is true (or set the specific panel flag if you add granular flags).
+- GLBench shows 00 FPS or no DOM: confirm the `gl-bench` package is present and was imported as the distribution build; also verify `window`/`document` are available (client-only).
+- Large JS heap reported (~800MB): use Chrome DevTools heap snapshots to find retained objects, and consider lowering `VISUAL_CONFIG.quality.pixelRatio` or disabling high-res textures.
+- Lighting JSON fails to apply: open devtools console to see parse errors; the editor shows alerts for invalid JSON.
+
+---
+
+## Project structure (updated)
 
 ```
 src/
 ├── components/
-│   ├── systems/           # Core systems (Camera, Bloom, Lighting, Collider)
-│   ├── ui/               # Debug interface components
-│   └── Scene_simple.jsx  # Main scene orchestrator
+│   ├── systems/           # Camera, Bloom/PostProcessing, Lighting, Collider, PerformanceMonitor
+│   ├── ui/                # Debug UI panels and layout manager
+│   └── Scene_simple.jsx   # Main scene orchestrator
 ├── config/
-│   └── app-config.js     # Centralized configuration
+│   └── app-config.js      # Centralized configuration (DEVELOPER_CONFIG, VISUAL_CONFIG...)
 ├── data/
-│   └── collider.json     # Collision detection data
+│   └── lights.json        # Example lighting preset (edit & move to public/ for runtime)
+├── public/
+│   └── models/            # Static assets (GLB/GLTF) — used by useLoader
 └── utils/
-    └── helpers.js        # Utility functions
+    └── helpers.js
 ```
 
-## 🎯 Architecture Design Principles
+---
 
-- **Separation of Concerns** - Each system handles specific functionality
-- **Configuration-Driven** - Behavior controlled through config files
-- **Performance-Oriented** - Optimized for production deployment
-- **Developer Experience** - Comprehensive debug tools and documentation
-- **Modular Components** - Easy to extend and customize
-- **Production-Ready** - Zero debug code in production builds
+## Contributing & notes for maintainers
 
-## � Performance Characteristics
+- When changing systems that manipulate the DOM (debug UI, GLBench), ensure the code runs client-side inside `useEffect` to avoid SSR errors.
+- Keep postprocessing construction deterministic and rebuild composer only when necessary (quality settings) — avoid forcing full Canvas remounts.
+- If you expose new window debug APIs (e.g. `window.lightingDebugData`), document the contract (functions available) and keep cleanup on unmount.
 
-- **Frame Rate**: 60 FPS target with adaptive quality
-- **Memory Usage**: Optimized object pooling and cleanup
-- **Bundle Size**: Tree-shaking optimized dependencies
-- **Load Time**: Lazy loading for non-critical components
-- **Scalability**: Handles complex scenes with multiple objects
+If you'd like, I can also:
 
-## 🔧 Development & Production
+1. Move `src/data/lights.json` to `public/data/lights.json` and add a fetch-on-start in `LightingSystem` to seed the defaults.
+2. Add a small CLI/dev script to export current lighting presets into `src/data/lights.json` automatically.
 
-### Development Features:
+---
 
-- Hot reload configuration changes
-- Real-time parameter adjustment
-- Comprehensive debug panels
-- Console logging for debugging
-- Performance monitoring
+## License
 
-### Production Optimizations:
+MIT — see `LICENSE`.
 
-- Zero debug code in final build
-- Aggressive tree-shaking
-- Optimized asset loading
-- Memory leak prevention
-- SEO-friendly SSR support
+---
 
-**🚨 DEPLOYMENT WARNING:** Always verify production configuration before deployment:
-
-```bash
-# Before deployment, check these critical settings:
-# 1. ENABLE_DEBUG_MODE: false
-# 2. BUILD_CONFIG.environment: "production"
-# 3. BUILD_CONFIG.features.debug: false
-```
-
-## 📸 Screenshots
-
-_Professional 3D scenes created with WebMeshCore3D framework_
-
-## 🔗 Demo & Documentation
-
-- **Live Demo**: [demo.burakdarende.com/webmeshcore3d](https://demo.burakdarende.com/webmeshcore3d)
-- **Documentation**: [docs.burakdarende.com/webmeshcore3d](https://docs.burakdarende.com/webmeshcore3d)
-- **Examples**: [examples.burakdarende.com/webmeshcore3d](https://examples.burakdarende.com/webmeshcore3d)
-
-## 👨‍💻 Author
-
-**Burak Darende** - Senior Frontend Architect  
-🌐 [burakdarende.com](https://burakdarende.com) | 💻 [@burakdarende](https://github.com/burakdarende)
-
-Specialized in 3D web applications, WebGL optimization, and enterprise-grade frontend architecture.
-
-## 📄 License & Usage
-
-Open source under [MIT License](LICENSE). Free for commercial and personal use.
-
-## 🤝 Contributing
-
-We welcome contributions from the developer community:
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit your changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
-
-### Contribution Guidelines:
-
-- Follow existing code style and architecture
-- Include comprehensive tests for new features
-- Update documentation for API changes
-- Ensure production build remains clean
-
-## ⭐ Support the Project
-
-If this framework helps your projects, consider:
+If you'd like more detail on any part of the README (examples for lighting JSON format, exact debug API surface, or a developer quick-start), tell me which section and I'll expand it.
 
 - ⭐ Starring the repository
 - 🐛 Reporting issues and bugs

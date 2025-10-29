@@ -6,6 +6,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useThree, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { DEFAULT_LIGHTS } from "./LightingConfig";
 
 export function LightingSystem({
   isDebugMode = false,
@@ -39,53 +40,8 @@ export function LightingSystem({
       );
     }
 
-    // Default state
-    return {
-      ambient: {
-        intensity: 0.5,
-        color: "#ffffff",
-        visible: true,
-      },
-      directional: {
-        intensity: 0.8,
-        color: "#ffffff",
-        position: { x: 2, y: 4, z: 2 },
-        target: { x: 0, y: 0, z: 0 },
-        linkToCenter: true,
-        castShadow: true,
-        visible: true,
-      },
-      // Multiple spot lights array
-      spots: [
-        {
-          id: "spot1",
-          intensity: 1.2,
-          color: "#ffddaa",
-          position: { x: -2, y: 3, z: 2 },
-          target: { x: 0, y: 0, z: 0 },
-          linkToCenter: true,
-          angle: Math.PI / 6,
-          penumbra: 0.2,
-          distance: 10,
-          decay: 1,
-          castShadow: false,
-          visible: true,
-        },
-      ],
-      // Multiple point lights array
-      points: [
-        {
-          id: "point1",
-          intensity: 0.6,
-          color: "#aaffdd",
-          position: { x: 2, y: 2, z: -2 },
-          distance: 8,
-          decay: 2,
-          castShadow: false,
-          visible: true,
-        },
-      ],
-    };
+    // Default state: use DEFAULT_LIGHTS from LightingConfig
+    return DEFAULT_LIGHTS;
   };
 
   const [advancedLights, setAdvancedLights] = useState(getInitialLightingState);

@@ -695,6 +695,8 @@ function AdvancedLightControls({
 export function LightingDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
   // Don't use local state - use window data directly
   const [windowData, setWindowData] = useState(null);
+  const [jsonCode, setJsonCode] = useState("");
+  const [showJsonEditor, setShowJsonEditor] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const { position, isVisible } = useDebugUIPosition("lightingDebug");
 
@@ -716,6 +718,48 @@ export function LightingDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Keep JSON textarea in sync with current settings
+  useEffect(() => {
+    if (windowData && windowData.advancedLights) {
+      setJsonCode(JSON.stringify(windowData.advancedLights, null, 2));
+    }
+  }, [windowData]);
+
+  const copyJsonToClipboard = async () => {
+    try {
+      const code =
+        jsonCode ||
+        (windowData && JSON.stringify(windowData.advancedLights, null, 2));
+      await navigator.clipboard.writeText(code);
+      alert("✅ Lighting JSON copied to clipboard!");
+    } catch (err) {
+      console.error("Failed to copy:", err);
+      // fallback
+      const textArea = document.createElement("textarea");
+      textArea.value = jsonCode;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      alert("✅ Lighting JSON copied to clipboard!");
+    }
+  };
+
+  const applyJsonToLighting = () => {
+    try {
+      const parsed = JSON.parse(jsonCode);
+      if (windowData && windowData.setAdvancedLights) {
+        windowData.setAdvancedLights(parsed);
+        alert("✅ Lighting settings applied from JSON.");
+      } else {
+        alert("⚠️ Lighting system not ready.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("❌ Invalid JSON. Check the format and try again.");
+    }
+  };
 
   // Debug info
   useEffect(() => {
@@ -885,6 +929,21 @@ export function LightingDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
                     title="Reset All Lighting Settings"
                   >
                     RESET
+                  </button>
+                  <button
+                    onClick={() => setShowJsonEditor((s) => !s)}
+                    style={{
+                      background: "rgba(0, 170, 255, 0.12)",
+                      border: "1px solid #00aaff",
+                      color: "#00aaff",
+                      fontSize: "8px",
+                      padding: "2px 6px",
+                      borderRadius: "3px",
+                      cursor: "pointer",
+                    }}
+                    title="Show JSON editor for lights"
+                  >
+                    {showJsonEditor ? "📄 Hide JSON" : "🔧 Show JSON"}
                   </button>
                 </div>
               </h4>
@@ -1068,6 +1127,60 @@ export function LightingDebugUI({ DEVELOPER_CONFIG, DEBUG_UI_CONFIG }) {
                     )}
                   </div>
                 )}
+
+              {/* JSON editor area */}
+              {showJsonEditor && (
+                <div style={{ marginTop: "10px", marginBottom: "10px" }}>
+                  <div
+                    style={{ display: "flex", gap: "6px", marginBottom: "6px" }}
+                  >
+                    <button
+                      onClick={copyJsonToClipboard}
+                      style={{
+                        background: "#28a745",
+                        color: "white",
+                        border: "none",
+                        padding: "6px 8px",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        fontSize: "11px",
+                      }}
+                    >
+                      Copy JSON
+                    </button>
+                    <button
+                      onClick={applyJsonToLighting}
+                      style={{
+                        background: "#007bff",
+                        color: "white",
+                        border: "none",
+                        padding: "6px 8px",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        fontSize: "11px",
+                      }}
+                    >
+                      Apply JSON
+                    </button>
+                  </div>
+
+                  <textarea
+                    value={jsonCode}
+                    onChange={(e) => setJsonCode(e.target.value)}
+                    style={{
+                      width: "100%",
+                      minHeight: "160px",
+                      background: "rgba(0,0,0,0.6)",
+                      border: "1px solid #333",
+                      color: "#fff",
+                      padding: "8px",
+                      fontFamily: "monospace",
+                      fontSize: "12px",
+                      borderRadius: "4px",
+                    }}
+                  />
+                </div>
+              )}
             </div>
           )}
 
