@@ -9,7 +9,10 @@ import { useLoader } from "@react-three/fiber";
 import * as THREE from "three";
 import { analyzeMaterials } from "../utils/splineFeatures.js";
 
-export function Model({ modelPath = "/models/bdr_room_1.glb" }) {
+export function Model({
+  modelPath = "/models/bdr_room_1.glb",
+  qualitySettings,
+}) {
   const gltf = useLoader(GLTFLoader, modelPath);
 
   useEffect(() => {
@@ -222,7 +225,7 @@ export function Model({ modelPath = "/models/bdr_room_1.glb" }) {
         }
       }, 1000);
     }
-  }, [gltf]);
+  }, [gltf, qualitySettings]);
 
   return <primitive object={gltf.scene} />;
 }
