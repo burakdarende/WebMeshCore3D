@@ -506,6 +506,8 @@ export default function Scene() {
               DEBUG_UI_CONFIG={DEBUG_UI_CONFIG}
             />
             <ColliderDebugUI
+              DEVELOPER_CONFIG={DEVELOPER_CONFIG}
+              DEBUG_UI_CONFIG={DEBUG_UI_CONFIG}
               colliders={colliders}
               onCollidersUpdate={setColliders}
               selectedCollider={selectedCollider}

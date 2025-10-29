@@ -19,6 +19,8 @@ import { GamesModal } from "./modal/GamesModal";
 import { PortfolioModal } from "./modal/PortfolioModal";
 
 export function ColliderDebugUI({
+  DEVELOPER_CONFIG,
+  DEBUG_UI_CONFIG,
   colliders,
   onCollidersUpdate,
   selectedCollider,
@@ -129,13 +131,14 @@ export function ColliderDebugUI({
     });
   };
 
-  if (!process.env.NODE_ENV || process.env.NODE_ENV === "development") {
-    // Only show in development
-  } else {
-    return null;
-  }
+  // Follow the project's debug gating (app-config). If DEVELOPER_CONFIG
+  // isn't provided fall back to the old NODE_ENV behavior.
+  const devFlag =
+    (DEVELOPER_CONFIG && DEVELOPER_CONFIG.ENABLE_DEBUG_MODE) ||
+    !process.env.NODE_ENV ||
+    process.env.NODE_ENV === "development";
 
-  if (!isVisible || !position) {
+  if (!devFlag || !isVisible || !position) {
     return null;
   }
 
