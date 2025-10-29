@@ -168,42 +168,42 @@ export const VISUAL_CONFIG = {
       shadowType: THREE.BasicShadowMap,
       anisotropy: 1,
       enableSMAA: false,
-      enableFXAA: false, // Basic FXAA for low-end devices
-      enablePMNDRS: false, // Advanced PMNDRS postprocessing
-      pixelRatio: 1,
+      enableFXAA: true,
+      enablePMNDRS: true,
+      pixelRatio: 1, // --- GERİ EKLENDİ ---
     },
     medium: {
-      antialias: true,
-      multisampling: 2,
+      antialias: false,
+      multisampling: 0,
       shadowMapSize: 1024,
       shadowType: THREE.PCFShadowMap,
       anisotropy: 2,
       enableSMAA: false,
-      enableFXAA: true, // FXAA for better performance
-      enablePMNDRS: false,
-      pixelRatio: 1.5, // Static for SSR
+      enableFXAA: true,
+      enablePMNDRS: true,
+      pixelRatio: 1.5, // --- GERİ EKLENDİ ---
     },
     high: {
-      antialias: true,
-      multisampling: 4,
+      antialias: false,
+      multisampling: 0,
       shadowMapSize: 1024,
       shadowType: THREE.PCFSoftShadowMap,
       anisotropy: 4,
       enableSMAA: true,
       enableFXAA: false,
-      enablePMNDRS: true, // Advanced PMNDRS postprocessing
-      pixelRatio: 2, // Static value for SSR compatibility
+      enablePMNDRS: true,
+      pixelRatio: 2, // --- GERİ EKLENDİ ---
     },
     ultra: {
-      antialias: true,
-      multisampling: 8,
+      antialias: false,
+      multisampling: 0,
       shadowMapSize: 2048,
       shadowType: THREE.PCFSoftShadowMap,
       anisotropy: 8,
       enableSMAA: true,
       enableFXAA: false,
       enablePMNDRS: true,
-      pixelRatio: 2, // Static value for SSR compatibility
+      pixelRatio: 2, // --- GERİ EKLENDİ --- (Varsayılan olarak 2, UI'dan 5'e çıkabilir)
     },
   },
 
@@ -212,21 +212,22 @@ export const VISUAL_CONFIG = {
   },
 
   // ═══════════════════════════════════════════════════════════════════════════════
-  // 🌟 BLOOM SYSTEM CONFIGURATION
+  // 🌟 BLOOM SYSTEM CONFIGURATION (PMNDRS 'postprocessing' UYUMLU)
   // ═══════════════════════════════════════════════════════════════════════════════
 
   bloom: {
     // 🎛️ Interactive Controls (visible in debug UI when enabled)
-    threshold: 0.1, // How bright pixels need to be to glow (0.0 - 1.0)
-    strength: 0.1, // Intensity of the glow effect (0.0 - 3.0)
-    radius: 0.22, // Spread of the glow (0.0 - 1.0)
-    exposure: 1.0, // Bloom exposure level
+    // BU AYARLAR PMBloomEffect İÇİNDİR
+    luminanceThreshold: 0.1, // How bright pixels need to be to glow (0.0 - 1.0)
+    luminanceSmoothing: 0.1, // Smooth transition for threshold (0.0 - 1.0)
+    intensity: 0.3, // Intensity of the glow effect (0.0 - 3.0)
 
     // ⚙️ Technical Settings
-    mipmapBlur: false, // Use mipmap blur for better performance
-    luminanceThreshold: 0.1, // Luminance threshold for selective bloom
-    luminanceSmoothing: 0.025, // Smoothing factor for luminance threshold
-    intensity: 1.0, // Overall bloom intensity multiplier
+    mipmapBlur: true, // Use mipmap blur for better performance and look
+    radius: 0.22, // Eski UnrealBloomPass ayarı - artık kullanılmıyor
+    strength: 0.1, // Eski UnrealBloomPass ayarı - artık kullanılmıyor
+    threshold: 0.1, // Eski UnrealBloomPass ayarı - artık kullanılmıyor
+    exposure: 1.0, // Artık ToneMappingEffect tarafından yönetiliyor
   },
   // ═══════════════════════════════════════════════════════════════════════════════
   // 🎨 Backward Compatibility - Old structure for existing components
@@ -251,9 +252,6 @@ export const VISUAL_CONFIG = {
     position: [0, 5, -10],
     color: "#FFA500",
     intensity: 1.0,
-  },
-  get quality() {
-    return this.qualityPresets[this.qualityPreset];
   },
 
   // 🎨 Material Settings

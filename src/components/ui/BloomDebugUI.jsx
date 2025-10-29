@@ -10,13 +10,12 @@ export function BloomDebugUI({
   DEBUG_UI_CONFIG,
   VISUAL_CONFIG,
 }) {
-  // Start with default values, update from window data when available
+  // Start with default values (PMNDRS uyumlu)
   const [bloomData, setBloomData] = useState(() => ({
     bloomParams: {
-      threshold: VISUAL_CONFIG.bloom.threshold,
-      strength: VISUAL_CONFIG.bloom.strength,
-      radius: VISUAL_CONFIG.bloom.radius,
-      exposure: VISUAL_CONFIG.bloom.exposure,
+      luminanceThreshold: VISUAL_CONFIG.bloom.luminanceThreshold,
+      luminanceSmoothing: VISUAL_CONFIG.bloom.luminanceSmoothing,
+      intensity: VISUAL_CONFIG.bloom.intensity,
     },
     setBloomParams: null,
   }));
@@ -37,7 +36,7 @@ export function BloomDebugUI({
 
   // Debug info
   useEffect(() => {
-    console.log("BloomDebugUI - State:", {
+    console.log("BloomDebugUI (Modern) - State:", {
       ENABLE_DEBUG_MODE: DEVELOPER_CONFIG.ENABLE_DEBUG_MODE,
       bloomData: !!bloomData,
       isVisible,
@@ -56,6 +55,32 @@ export function BloomDebugUI({
   }
 
   const { bloomParams, setBloomParams } = bloomData;
+
+  // --- YENİ: ORTAK GÜNCELLEME FONKSİYONU ---
+  // Slider'ı ve global state'i aynı anda güncelleyen fonksiyon
+  const handleParamChange = (paramName, value) => {
+    const newValue = parseFloat(value);
+
+    // 1. Global state'i güncelle (BloomSystem'deki ana state)
+    // Bu, efekti değiştirir
+    if (setBloomParams) {
+      setBloomParams((prev) => ({
+        ...prev,
+        [paramName]: newValue,
+      }));
+    }
+
+    // 2. Local state'i ANINDA güncelle
+    // Bu, slider'ın takılmadan hareket etmesini sağlar
+    setBloomData((prevData) => ({
+      ...prevData,
+      bloomParams: {
+        ...prevData.bloomParams,
+        [paramName]: newValue,
+      },
+    }));
+  };
+  // --- BİTTİ ---
 
   return (
     <div
@@ -92,7 +117,9 @@ export function BloomDebugUI({
           alignItems: "center",
         }}
       >
-        <span>{DEBUG_UI_CONFIG.panels.BLOOM_DEBUG.icon} BLOOM DEBUG</span>
+        <span>
+          {DEBUG_UI_CONFIG.panels.BLOOM_DEBUG.icon} BLOOM DEBUG (PMNDRS)
+        </span>
         <button
           onClick={() => setIsMinimized(!isMinimized)}
           style={{
@@ -118,90 +145,63 @@ export function BloomDebugUI({
         <>
           <div style={{ marginBottom: "15px" }}>
             <label style={{ display: "block", marginBottom: "5px" }}>
-              Threshold: {bloomParams.threshold?.toFixed(3) || "0.100"}
+              Luminance Threshold:{" "}
+              {bloomParams.luminanceThreshold?.toFixed(3) || "0.100"}
             </label>
             <input
               type="range"
               min="0"
               max="1"
-              step="0.001" // Much more precise (0.1% steps)
-              value={bloomParams.threshold || 0.1}
+              step="0.001"
+              value={bloomParams.luminanceThreshold || 0.1}
+              // --- DEĞİŞİKLİK ---
               onChange={(e) =>
-                setBloomParams &&
-                setBloomParams((prev) => ({
-                  ...prev,
-                  threshold: parseFloat(e.target.value),
-                }))
+                handleParamChange("luminanceThreshold", e.target.value)
               }
+              // --- BİTTİ ---
               style={{ width: "100%" }}
             />
           </div>
 
           <div style={{ marginBottom: "15px" }}>
             <label style={{ display: "block", marginBottom: "5px" }}>
-              Strength: {bloomParams.strength?.toFixed(3) || "0.000"}
+              Luminance Smoothing:{" "}
+              {bloomParams.luminanceSmoothing?.toFixed(3) || "0.100"}
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.001"
+              value={bloomParams.luminanceSmoothing || 0.1}
+              // --- DEĞİŞİKLİK ---
+              onChange={(e) =>
+                handleParamChange("luminanceSmoothing", e.target.value)
+              }
+              // --- BİTTİ ---
+              style={{ width: "100%" }}
+            />
+          </div>
+
+          <div style={{ marginBottom: "15px" }}>
+            <label style={{ display: "block", marginBottom: "5px" }}>
+              Intensity: {bloomParams.intensity?.toFixed(3) || "0.100"}
             </label>
             <input
               type="range"
               min="0"
               max="3"
-              step="0.01" // More precise (1% steps instead of 10%)
-              value={bloomParams.strength || 0.0}
-              onChange={(e) =>
-                setBloomParams &&
-                setBloomParams((prev) => ({
-                  ...prev,
-                  strength: parseFloat(e.target.value),
-                }))
-              }
-              style={{ width: "100%" }}
-            />
-          </div>
-
-          <div style={{ marginBottom: "15px" }}>
-            <label style={{ display: "block", marginBottom: "5px" }}>
-              Radius: {bloomParams.radius?.toFixed(3) || "0.220"}
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.001" // Much more precise (0.1% steps)
-              value={bloomParams.radius || 0.22}
-              onChange={(e) =>
-                setBloomParams &&
-                setBloomParams((prev) => ({
-                  ...prev,
-                  radius: parseFloat(e.target.value),
-                }))
-              }
-              style={{ width: "100%" }}
-            />
-          </div>
-
-          <div style={{ marginBottom: "15px" }}>
-            <label style={{ display: "block", marginBottom: "5px" }}>
-              Exposure: {bloomParams.exposure?.toFixed(3) || "1.000"}
-            </label>
-            <input
-              type="range"
-              min="0.1"
-              max="2"
-              step="0.01" // More precise (1% steps instead of 10%)
-              value={bloomParams.exposure || 1.0}
-              onChange={(e) =>
-                setBloomParams &&
-                setBloomParams((prev) => ({
-                  ...prev,
-                  exposure: parseFloat(e.target.value),
-                }))
-              }
+              step="0.01"
+              value={bloomParams.intensity || 0.0}
+              // --- DEĞİŞİKLİK ---
+              onChange={(e) => handleParamChange("intensity", e.target.value)}
+              // --- BİTTİ ---
               style={{ width: "100%" }}
             />
           </div>
 
           <div style={{ fontSize: "10px", color: "#888", marginTop: "10px" }}>
-            🎯 Emissive materials auto-bloom | 🌟 25% random objects for testing
+            🎯 Bloom parlaklık (luminance) bazlı çalışıyor.
           </div>
         </>
       )}

@@ -2,7 +2,7 @@
 // QUALITY DEBUG UI
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useDebugUIPosition } from "./UILayoutManager";
 import { VISUAL_CONFIG } from "../../config/app-config";
 
@@ -131,20 +131,55 @@ export function QualityDebugUI({
                     onChange={(e) => handleSettingChange(key, e.target.checked)}
                   />
                 ) : typeof value === "number" ? (
-                  <input
-                    type="number"
-                    value={value}
-                    onChange={(e) =>
-                      handleSettingChange(key, parseFloat(e.target.value))
-                    }
-                    style={{
-                      background: "#333",
-                      color: "white",
-                      border: "1px solid #555",
-                      width: "60px",
-                    }}
-                  />
+                  // --- DEĞİŞİKLİK BAŞLANGICI: pixelRatio için Slider ---
+                  key === "pixelRatio" ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        width: "130px", // Toplam genişlik
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <input
+                        type="range"
+                        min="1"
+                        max="5"
+                        step="0.1"
+                        value={value}
+                        onChange={(e) =>
+                          handleSettingChange(key, parseFloat(e.target.value))
+                        }
+                        style={{ width: "80px", marginRight: "5px" }} // Slider genişliği
+                      />
+                      <span
+                        style={{
+                          width: "35px",
+                          textAlign: "right",
+                          color: "#00ffff",
+                        }}
+                      >
+                        {value.toFixed(1)}
+                      </span>
+                    </div>
+                  ) : (
+                    // Diğer number input'lar için (örn: shadowMapSize)
+                    <input
+                      type="number"
+                      value={value}
+                      onChange={(e) =>
+                        handleSettingChange(key, parseFloat(e.target.value))
+                      }
+                      style={{
+                        background: "#333",
+                        color: "white",
+                        border: "1px solid #555",
+                        width: "60px",
+                      }}
+                    />
+                  )
                 ) : (
+                  // --- DEĞİŞİKLİK SONU ---
                   <span>{String(value)}</span>
                 )}
               </div>
