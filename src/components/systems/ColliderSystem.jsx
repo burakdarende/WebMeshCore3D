@@ -169,31 +169,17 @@ function Collider({
   const handleClick = (event) => {
     event.stopPropagation();
 
-    if (enableDev && debugPanelsVisible) {
-      // Dev mode with debug panels: handle selection AND animation
-      onSelect(colliderData.id);
-
-      // Also trigger animation in dev mode
-      if (colliderData.animation && window.modelAnimations) {
-        console.log(
-          `🎬 [DEV] Collider ${colliderData.id} triggering animation: ${colliderData.animation}`
-        );
-        window.modelAnimations.play(colliderData.animation);
-      }
-    } else {
-      // Production mode OR debug panels hidden: handle link and animation
-      if (colliderData.link) {
-        handleLinkAction(colliderData.link);
-      }
-
-      // Trigger animation if specified
-      if (colliderData.animation && window.modelAnimations) {
-        console.log(
-          `🎬 [PROD] Collider ${colliderData.id} triggering animation: ${colliderData.animation}`
-        );
-        window.modelAnimations.play(colliderData.animation);
-      }
+    // Collider'ın link veya animation özelliği varsa her zaman tıklanabilir olmalı
+    if (colliderData.link) {
+      handleLinkAction(colliderData.link);
     }
+
+    if (colliderData.animation && window.modelAnimations) {
+      window.modelAnimations.play(colliderData.animation);
+    }
+
+    // Seçim işlemi debug moddan bağımsız olarak çalışsın
+    onSelect && onSelect(colliderData.id);
   };
 
   // Handle different types of links
@@ -272,12 +258,12 @@ function Collider({
     setIsHovered(true);
     onHover && onHover(colliderData.id);
 
-    // Change cursor to pointer when hovering over collider
-    gl.domElement.style.cursor = 'url("/pointer.png"), pointer';
+    // Collider tıklanabilir ise her zaman cursor değiştir
+    if (colliderData.link || colliderData.animation) {
+      gl.domElement.style.cursor = 'url("/pointer.png"), pointer';
+    }
 
-    // Trigger hover animation if specified (both dev and prod mode)
     if (colliderData.animation && window.modelAnimations) {
-      console.log(`🎬 Hover triggering animation: ${colliderData.animation}`);
       window.modelAnimations.play(colliderData.animation);
     }
   };
@@ -287,12 +273,10 @@ function Collider({
     setIsHovered(false);
     onUnhover && onUnhover(colliderData.id);
 
-    // Reset cursor to default when leaving collider
+    // Cursor’u eski haline döndür
     gl.domElement.style.cursor = 'url("/cursor.png"), auto';
 
-    // Stop animation on hover out if specified (both dev and prod mode)
     if (colliderData.animation && window.modelAnimations) {
-      console.log(`🛑 Hover out stopping animations`);
       window.modelAnimations.stop();
     }
   };
@@ -305,7 +289,7 @@ function Collider({
         opacity: COLLIDER_CONFIG.visual.selected.opacity,
         linewidth: COLLIDER_CONFIG.visual.selected.linewidth,
       };
-    } else if (isHovered) {
+    } else if (isHovered && (colliderData.link || colliderData.animation)) {
       return {
         color: COLLIDER_CONFIG.visual.hover.color,
         opacity: COLLIDER_CONFIG.visual.hover.opacity,
@@ -322,8 +306,8 @@ function Collider({
 
   // Apply hover effects to scale (simplified - only slight scale on hover)
   const getEffectiveScale = () => {
-    if (isHovered && (!enableDev || !debugPanelsVisible)) {
-      const multiplier = 1.05; // Slight 5% scale increase on hover
+    if (isHovered && (colliderData.link || colliderData.animation)) {
+      const multiplier = 1.05; // 5% büyüt
       return (colliderData.size || [1, 1, 1]).map((s) => s * multiplier);
     }
     return colliderData.size || [1, 1, 1];

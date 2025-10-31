@@ -11,7 +11,7 @@ import * as THREE from "three";
 export const DEVELOPER_CONFIG = {
   // 🐛 Master switch for all debug features
   // Controls ALL debug UI panels: Camera, Bloom, Lighting, Collider debug interfaces
-  ENABLE_DEBUG_MODE: true, // Set to false for production deployment to hide ALL debug UI
+  ENABLE_DEBUG_MODE: false, // Set to false for production deployment to hide ALL debug UI
   // 📝 Console logging for materials and setup
   // ⚠️ IMPORTANT: Set to false for production to hide ALL console logs!
   // Controls: material analysis, camera switching, setup logs, WebGL errors
@@ -60,7 +60,7 @@ export const CAMERA_CONFIG = {
   target: [0.46, 0.77, -0.27], // [x, y, z] - Change this to your desired focus point
 
   // 📐 Camera projection type
-  perspective: true, // true = Perspective camera, false = Orthographic camera
+  perspective: false, // true = Perspective camera, false = Orthographic camera
 
   // 🔍 FOV Settings for both camera types
   fov: {
@@ -122,9 +122,9 @@ export const CAMERA_CONFIG = {
 
   // 🎯 Mouse Tracking Settings
   mouseTracking: {
-    enabled: false, // Enable mouse tracking by default
+    enabled: true, // Enable mouse tracking by default
     intensity: {
-      default: 1.0, // Default intensity
+      default: 2.0, // Default intensity
       min: 0.1, // Minimum intensity
       max: 2.0, // Maximum intensity
       step: 0.1, // Intensity adjustment step
@@ -157,7 +157,7 @@ export const CAMERA_CONFIG = {
 
 export const VISUAL_CONFIG = {
   // 🏆 Quality Presets (change this for different performance levels)
-  qualityPreset: "high", // "low", "medium", "high", "ultra"
+  qualityPreset: "ultra", // "low", "medium", "high", "ultra"
 
   // 🎨 Render Quality Settings (auto-configured based on preset)
   qualityPresets: {
@@ -201,7 +201,7 @@ export const VISUAL_CONFIG = {
       shadowType: THREE.PCFSoftShadowMap,
       anisotropy: 8,
       enableSMAA: true,
-      enableFXAA: false,
+      enableFXAA: true,
       enablePMNDRS: true,
       pixelRatio: 2, // re-added (default 2, UI can increase to 5)
     },
@@ -218,9 +218,9 @@ export const VISUAL_CONFIG = {
   bloom: {
     // 🎛️ Interactive Controls (visible in debug UI when enabled)
     // These settings are for PMBloomEffect
-    luminanceThreshold: 0.1, // How bright pixels need to be to glow (0.0 - 1.0)
-    luminanceSmoothing: 0.1, // Smooth transition for threshold (0.0 - 1.0)
-    intensity: 0.3, // Intensity of the glow effect (0.0 - 3.0)
+    luminanceThreshold: 0.282, // How bright pixels need to be to glow (0.0 - 1.0)
+    luminanceSmoothing: 0.257, // Smooth transition for threshold (0.0 - 1.0)
+    intensity: 0.260, // Intensity of the glow effect (0.0 - 3.0)
 
     // ⚙️ Technical Settings
     mipmapBlur: true, // Use mipmap blur for better performance and look

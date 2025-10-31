@@ -469,18 +469,16 @@ export default function Scene() {
         {/* Quality System - Runtime quality adjustments */}
         <QualityRuntimeUpdater qualitySettings={qualitySettings} />
 
-        {/* 🎯 DEVELOPER ONLY: Interactive Collider System */}
-        {DEVELOPER_CONFIG.ENABLE_DEBUG_MODE && (
-          <ColliderSystem
-            colliders={colliders}
-            onCollidersUpdate={setColliders}
-            selectedCollider={selectedCollider}
-            onSelectCollider={setSelectedCollider}
-            enableDev={DEVELOPER_CONFIG.ENABLE_DEBUG_MODE}
-            debugPanelsVisible={debugPanelsVisible}
-            helpersVisible={debugHelpersVisible}
-          />
-        )}
+        {/* Collider System: Her zaman aktif, tıklanabilirlik prod modda da çalışır */}
+        <ColliderSystem
+          colliders={colliders}
+          onCollidersUpdate={setColliders}
+          selectedCollider={selectedCollider}
+          onSelectCollider={setSelectedCollider}
+          enableDev={DEVELOPER_CONFIG.ENABLE_DEBUG_MODE}
+          debugPanelsVisible={debugPanelsVisible}
+          helpersVisible={debugHelpersVisible}
+        />
 
         {/* 🚀 PERFORMANCE MONITOR (GL-BENCH) */}
         <PerformanceMonitor />
