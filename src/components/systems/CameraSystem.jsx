@@ -444,8 +444,7 @@ export function CameraControls({
         }
 
         console.log(
-          `📷 Auto rotate ${
-            enabled ? "enabled" : "disabled"
+          `📷 Auto rotate ${enabled ? "enabled" : "disabled"
           } - Speed: ${speed} - Direction: ${direction}`
         );
       },
@@ -474,8 +473,7 @@ export function CameraControls({
         currentMouseTrackingState = { enabled, intensity };
 
         console.log(
-          `📷 Mouse tracking ${
-            enabled ? "enabled" : "disabled"
+          `📷 Mouse tracking ${enabled ? "enabled" : "disabled"
           } - Intensity: ${intensity}`
         );
       },
@@ -733,7 +731,31 @@ export function CameraTypeSwitcher({ DEVELOPER_CONFIG, cameraType }) {
     newCamera.updateProjectionMatrix();
 
     // Update Three.js camera
+    // Update Three.js camera
     set({ camera: newCamera });
+
+    // Handle Resize for the new camera
+    const handleResize = () => {
+      if (newCamera.isPerspectiveCamera) {
+        newCamera.aspect = window.innerWidth / window.innerHeight;
+        newCamera.updateProjectionMatrix();
+      } else if (newCamera.isOrthographicCamera) {
+        const aspect = window.innerWidth / window.innerHeight;
+        const orthoConfig = CAMERA_CONFIG.orthographic;
+        newCamera.left = orthoConfig.left * aspect;
+        newCamera.right = orthoConfig.right * aspect;
+        newCamera.top = orthoConfig.top;
+        newCamera.bottom = orthoConfig.bottom;
+        newCamera.updateProjectionMatrix();
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+
   }, [cameraType, set, DEVELOPER_CONFIG]); // REMOVED camera from deps to prevent infinite loop
 
   return null; // This component doesn't render anything

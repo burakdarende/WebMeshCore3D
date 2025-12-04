@@ -49,6 +49,7 @@ import { LightingSystem } from "./systems/LightingSystem";
 // Performance monitor import
 import { PerformanceMonitor } from "./systems/PerformanceMonitor";
 import { AdaptiveQualityManager } from "./systems/AdaptiveQualityManager";
+import { ScreenSystem } from "./systems/ScreenSystem";
 
 // Collider System Components
 import { ColliderSystem } from "./systems/ColliderSystem";
@@ -477,6 +478,9 @@ export default function Scene() {
           onQualityChange={handleQualityChange}
           enabled={PERFORMANCE_CONFIG.fps.adaptive}
         />
+
+        {/* Screen System - Video Textures for TVs and Monitors */}
+        <ScreenSystem />
 
         {/* Collider System: Her zaman aktif, tıklanabilirlik prod modda da çalışır */}
         <ColliderSystem
