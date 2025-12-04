@@ -11,7 +11,7 @@ import * as THREE from "three";
 export const DEVELOPER_CONFIG = {
   // 🐛 Master switch for all debug features
   // Controls ALL debug UI panels: Camera, Bloom, Lighting, Collider debug interfaces
-  ENABLE_DEBUG_MODE: true, // Set to false for production deployment to hide ALL debug UI
+  ENABLE_DEBUG_MODE: false, // Set to false for production deployment to hide ALL debug UI
   // 📝 Console logging for materials and setup
   // ⚠️ IMPORTANT: Set to false for production to hide ALL console logs!
   // Controls: material analysis, camera switching, setup logs, WebGL errors
