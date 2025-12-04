@@ -30,6 +30,7 @@ export default function Home() {
             color: "#4ade80",
             fontWeight: "400",
             lineHeight: "1.4",
+            fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'Andale Mono', 'Ubuntu Mono', monospace",
           }}
         >
           Developed by{" "}

@@ -56,7 +56,17 @@ export function PostProcessingEffect({ qualitySettings, bloomParams }) {
 
   // Main post-processing setup
   useEffect(() => {
-    if (!isEnabled || !gl || !scene || !camera || !qualitySettings) return;
+    // Check if PMNDRS is enabled in quality settings
+    if (!isEnabled || !gl || !scene || !camera || !qualitySettings || !qualitySettings.enablePMNDRS) {
+      // If disabled, ensure we clean up any existing composer
+      if (composerRef.current) {
+        console.log("⚪️ Post-Processing disabled by quality settings.");
+        composerRef.current.dispose();
+        composerRef.current = null;
+        window.postProcessingComposer = null;
+      }
+      return;
+    }
 
     try {
       console.log(

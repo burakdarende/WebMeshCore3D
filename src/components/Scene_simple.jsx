@@ -48,6 +48,7 @@ import { LightingSystem } from "./systems/LightingSystem";
 
 // Performance monitor import
 import { PerformanceMonitor } from "./systems/PerformanceMonitor";
+import { AdaptiveQualityManager } from "./systems/AdaptiveQualityManager";
 
 // Collider System Components
 import { ColliderSystem } from "./systems/ColliderSystem";
@@ -95,9 +96,11 @@ function QualityRuntimeUpdater({ qualitySettings }) {
     );
 
     // --- 1. Pixel Ratio (DPR) Update ---
+    // Handled by Canvas dpr prop, but we might need to resize composer
     if (gl.getPixelRatio() !== qualitySettings.pixelRatio) {
-      gl.setPixelRatio(qualitySettings.pixelRatio);
-      console.log(`✅ Set Pixel Ratio to: ${qualitySettings.pixelRatio}`);
+      // Note: Canvas dpr prop should handle the actual gl.setPixelRatio
+      // We just log it here for debugging
+      console.log(`✅ Pixel Ratio target: ${qualitySettings.pixelRatio}`);
 
       // Resize Post-Processing Composer (fixes zoom issues)
       if (window.postProcessingComposer) {
@@ -433,7 +436,10 @@ export default function Scene() {
         {/* Scene Background & Environment */}
         <color attach="background" args={[VISUAL_CONFIG.background]} />
         <Environment preset={VISUAL_CONFIG.environment} background={false} />
-        <SoftShadows />
+
+        {/* Only render SoftShadows on High/Ultra settings where shadowType is PCFSoftShadowMap */}
+        {qualitySettings.shadowType === THREE.PCFSoftShadowMap && <SoftShadows />}
+
         {/* Unified Advanced Lighting System */}
         <LightingSystem
           isDebugMode={DEVELOPER_CONFIG.ENABLE_DEBUG_MODE}
@@ -455,11 +461,7 @@ export default function Scene() {
           onTargetChange={setSharedTarget}
           cameraType={cameraType}
         />
-        {/* Dynamic Camera Type Switcher - Preserves state during camera changes */}
-        <CameraTypeSwitcher
-          DEVELOPER_CONFIG={DEVELOPER_CONFIG}
-          cameraType={cameraType}
-        />
+        {/* Dynamic Camera Type Switcher - REMOVED DUPLICATE (It is already inside CameraSystem) */}
         {/* Bloom System with PostProcessing and Controls */}
         <BloomSystem
           DEVELOPER_CONFIG={DEVELOPER_CONFIG}
@@ -468,6 +470,13 @@ export default function Scene() {
         />
         {/* Quality System - Runtime quality adjustments */}
         <QualityRuntimeUpdater qualitySettings={qualitySettings} />
+
+        {/* Adaptive Quality Manager - Automatically downgrades quality if FPS drops */}
+        <AdaptiveQualityManager
+          currentPreset={qualityPreset}
+          onQualityChange={handleQualityChange}
+          enabled={PERFORMANCE_CONFIG.fps.adaptive}
+        />
 
         {/* Collider System: Her zaman aktif, tıklanabilirlik prod modda da çalışır */}
         <ColliderSystem

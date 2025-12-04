@@ -14,9 +14,11 @@ export function Model({
   qualitySettings,
 }) {
   const gltf = useLoader(GLTFLoader, modelPath);
+  const analysisDoneRef = React.useRef(false);
 
   useEffect(() => {
-    if (gltf?.scene) {
+    if (gltf?.scene && !analysisDoneRef.current) {
+      analysisDoneRef.current = true;
       console.log("🔍 Model loaded, analyzing ALL material properties...");
       console.log("═══════════════════════════════════════════════════════");
 
@@ -65,32 +67,32 @@ export function Model({
                 // Base colors - DON'T MODIFY THESE
                 baseColor: mat.color
                   ? {
-                      hex: `#${mat.color
-                        .getHex()
-                        .toString(16)
-                        .padStart(6, "0")}`,
-                      rgb: `rgb(${(mat.color.r * 255).toFixed(0)}, ${(
-                        mat.color.g * 255
-                      ).toFixed(0)}, ${(mat.color.b * 255).toFixed(0)})`,
-                    }
+                    hex: `#${mat.color
+                      .getHex()
+                      .toString(16)
+                      .padStart(6, "0")}`,
+                    rgb: `rgb(${(mat.color.r * 255).toFixed(0)}, ${(
+                      mat.color.g * 255
+                    ).toFixed(0)}, ${(mat.color.b * 255).toFixed(0)})`,
+                  }
                   : "❌ No color",
                 // Emissive properties - THESE WE CAN MODIFY
                 emissive: mat.emissive
                   ? {
-                      hex: `#${mat.emissive
-                        .getHex()
-                        .toString(16)
-                        .padStart(6, "0")}`,
-                      rgb: `rgb(${(mat.emissive.r * 255).toFixed(0)}, ${(
-                        mat.emissive.g * 255
-                      ).toFixed(0)}, ${(mat.emissive.b * 255).toFixed(0)})`,
-                      intensity: mat.emissiveIntensity || 0,
-                      brightness: (
-                        mat.emissive.r +
-                        mat.emissive.g +
-                        mat.emissive.b
-                      ).toFixed(3),
-                    }
+                    hex: `#${mat.emissive
+                      .getHex()
+                      .toString(16)
+                      .padStart(6, "0")}`,
+                    rgb: `rgb(${(mat.emissive.r * 255).toFixed(0)}, ${(
+                      mat.emissive.g * 255
+                    ).toFixed(0)}, ${(mat.emissive.b * 255).toFixed(0)})`,
+                    intensity: mat.emissiveIntensity || 0,
+                    brightness: (
+                      mat.emissive.r +
+                      mat.emissive.g +
+                      mat.emissive.b
+                    ).toFixed(3),
+                  }
                   : "❌ No emission",
                 // Physical properties
                 metalness: mat.metalness?.toFixed(2) || "N/A",
@@ -143,8 +145,7 @@ export function Model({
                   }
 
                   console.log(
-                    `✨ Enhanced "${
-                      mat.name
+                    `✨ Enhanced "${mat.name
                     }" -> Intensity: ${mat.emissiveIntensity.toFixed(1)}`
                   );
                 }

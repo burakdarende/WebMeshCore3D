@@ -11,7 +11,7 @@ import * as THREE from "three";
 export const DEVELOPER_CONFIG = {
   // 🐛 Master switch for all debug features
   // Controls ALL debug UI panels: Camera, Bloom, Lighting, Collider debug interfaces
-  ENABLE_DEBUG_MODE: false, // Set to false for production deployment to hide ALL debug UI
+  ENABLE_DEBUG_MODE: true, // Set to false for production deployment to hide ALL debug UI
   // 📝 Console logging for materials and setup
   // ⚠️ IMPORTANT: Set to false for production to hide ALL console logs!
   // Controls: material analysis, camera switching, setup logs, WebGL errors
@@ -168,9 +168,9 @@ export const VISUAL_CONFIG = {
       shadowType: THREE.BasicShadowMap,
       anisotropy: 1,
       enableSMAA: false,
-      enableFXAA: true,
-      enablePMNDRS: true,
-      pixelRatio: 1, // re-added
+      enableFXAA: false, // Disabled for max performance
+      enablePMNDRS: false, // Disable post-processing entirely on low
+      pixelRatio: 1,
     },
     medium: {
       antialias: false,
@@ -181,7 +181,7 @@ export const VISUAL_CONFIG = {
       enableSMAA: false,
       enableFXAA: true,
       enablePMNDRS: true,
-      pixelRatio: 1.5, // re-added
+      pixelRatio: 1.5, // Capped at 1.5
     },
     high: {
       antialias: false,
@@ -192,7 +192,7 @@ export const VISUAL_CONFIG = {
       enableSMAA: true,
       enableFXAA: false,
       enablePMNDRS: true,
-      pixelRatio: 2, // re-added
+      pixelRatio: 1.5, // Capped at 1.5 for high to ensure smooth FPS
     },
     ultra: {
       antialias: false,
@@ -203,7 +203,7 @@ export const VISUAL_CONFIG = {
       enableSMAA: true,
       enableFXAA: true,
       enablePMNDRS: true,
-      pixelRatio: 2, // re-added (default 2, UI can increase to 5)
+      pixelRatio: 2, // Hard cap at 2.0 (never go to 3 or 4)
     },
   },
 
